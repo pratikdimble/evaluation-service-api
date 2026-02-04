@@ -14,6 +14,6 @@ import java.util.List;
 public class ModelDTO {
 
     private String model;
-    private List<outputDTO> outputDTOList;
+    private List<OutputDTO> outputDTOList;
 
 }

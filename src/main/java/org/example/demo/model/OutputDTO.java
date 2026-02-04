@@ -9,7 +9,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class outputDTO {
+public class OutputDTO {
 
     private String inputA;
     private Long inputARecords;

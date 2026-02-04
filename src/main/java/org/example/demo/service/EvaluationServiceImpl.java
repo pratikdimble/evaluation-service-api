@@ -1,10 +1,11 @@
 package org.example.demo.service;
 
 import org.example.demo.model.ResultDTO;
-import org.example.demo.model.outputDTO;
+import org.example.demo.model.OutputDTO;
 import org.example.demo.model.ModelDTO;
 import org.springframework.stereotype.Service;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,7 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -54,7 +54,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
                             String resolvedDir = dir.getFileName().toString();
 //                            System.out.println("Processing Model: " + resolvedDir);
                             AtomicBoolean foundDiff = new AtomicBoolean(false);
-                            List<outputDTO> attributesList = new ArrayList<>();
+                            List<OutputDTO> attributesList = new ArrayList<>();
 
                             try (Stream<String> lines = Files.lines(csvPath)) {
                                 ModelDTO modelDTO = new ModelDTO();
@@ -69,7 +69,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
                                         })
                                         //  .filter(parts -> Integer.parseInt(parts[parts.length - 1]) > 0)
                                         .forEach(parts -> {
-                                            attributesList.add(new outputDTO(parts[1], Long.valueOf(parts[3]), parts[4],Long.valueOf(parts[6]), Long.valueOf(parts[parts.length - 1])));
+                                            attributesList.add(new OutputDTO(parts[1], Long.valueOf(parts[3]), parts[4],Long.valueOf(parts[6]), Long.valueOf(parts[parts.length - 1])));
                                             foundDiff.set(true);
 //                                            System.out.println("\t\tInputA: " + parts[1] + " | InputB: " + parts[4] + "\n");
                                         });
@@ -116,7 +116,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
                     String resolvedDir = dir.getFileName().toString();
 //                            System.out.println("Processing Model: " + resolvedDir);
                     AtomicBoolean foundDiff = new AtomicBoolean(false);
-                    List<outputDTO> attributesList = new ArrayList<>();
+                    List<OutputDTO> attributesList = new ArrayList<>();
 
                     try (Stream<String> lines = Files.lines(csvPath)) {
                         ModelDTO modelDTO = new ModelDTO();
@@ -130,7 +130,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
                                     return inputARecords != inputBRecords || differences > 0;
                                 })
                                 .forEach(parts -> {
-                                    attributesList.add(new outputDTO(parts[1],
+                                    attributesList.add(new OutputDTO(parts[1],
                                             Long.valueOf(parts[3]), parts[4],
                                             Long.valueOf(parts[6]),
                                             Long.valueOf(parts[parts.length - 1]))
@@ -157,5 +157,38 @@ public class EvaluationServiceImpl implements IEvaluationService {
         System.out.println("\n\t\t Total directories processed: " + processedCount.get());
         System.out.println("\t\t Directories with differences: " + diffCount.get());
         return new ResultDTO((long) processedCount.get(), (long) diffCount.get(), modelDTOS);
+    }
+
+    @Override
+    public void exportCsv(Boolean isBatch) {
+        ResultDTO  resultDTO = this.readResourcesCSVs(isBatch);
+        if(resultDTO != null){
+            if(!resultDTO.getModelDTOs().isEmpty()){
+                List<ModelDTO> modelDTOs = new ArrayList<>(resultDTO.getModelDTOs());
+                // Export to CSV
+                String[] header = {"Model", "InputA", "InputA Records", "InputB", "InputB Records", "Attributes With Differences"};
+                try (FileWriter writer = new FileWriter("result_summary"+(isBatch ? "_batch" : "_online")+".csv")) {
+                    // Write header
+                    writer.append(String.join(",", header)).append("\n");
+
+                    // Write rows
+                    for (ModelDTO model : modelDTOs) {
+                        for (OutputDTO dto : model.getOutputDTOList()) {
+                            writer.append(model.getModel()).append(",")
+                                    .append(dto.getInputA()).append(",")
+                                    .append(String.valueOf(dto.getInputARecords())).append(",")
+                                    .append(dto.getInputB()).append(",")
+                                    .append(String.valueOf(dto.getInputBRecords())).append(",")
+                                    .append(String.valueOf(dto.getAttributesWithDifferences()))
+                                    .append("\n");
+                        }
+                    }
+                    System.out.println("CSV file created: "+"result_summary"+(isBatch ? "_batch" : "_online")+".csv");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+        }
     }
 }

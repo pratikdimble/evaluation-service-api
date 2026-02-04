@@ -5,10 +5,7 @@ import org.example.demo.model.ResultDTO;
 import org.example.demo.service.IEvaluationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -45,6 +42,12 @@ public class EvaluationController {
     public ResponseEntity<ResultDTO> evaluateBatchCSVs()
     {
         return ResponseEntity.ok(evaluationService.readResourcesCSVs(true));
+    }
+
+    @GetMapping("/evaluate/exportCsv")
+    public String exportCsv(@RequestParam(defaultValue = "false") boolean isBatch) {
+        evaluationService.exportCsv(isBatch);
+        return "CSV export triggered. Check "+"result_summary"+(isBatch ? "_batch" : "_online")+".csv"+" in your application directory.";
     }
 }
 
