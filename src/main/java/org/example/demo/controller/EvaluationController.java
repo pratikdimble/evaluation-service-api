@@ -1,6 +1,7 @@
 package org.example.demo.controller;
 
 import org.example.demo.model.ModelDTO;
+import org.example.demo.model.ResultDTO;
 import org.example.demo.service.IEvaluationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +36,7 @@ public class EvaluationController {
     }
 
     @GetMapping("/evaluate")
-    public ResponseEntity<List<ModelDTO>> readResourcesCSVs()
+    public ResponseEntity<ResultDTO> readResourcesCSVs()
     {
         return ResponseEntity.ok(evaluationService.readResourcesCSVs());
     }

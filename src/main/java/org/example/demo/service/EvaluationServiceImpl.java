@@ -1,5 +1,6 @@
 package org.example.demo.service;
 
+import org.example.demo.model.ResultDTO;
 import org.example.demo.model.outputDTO;
 import org.example.demo.model.ModelDTO;
 import org.springframework.stereotype.Service;
@@ -96,7 +97,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
     }
 
     @Override
-    public List<ModelDTO> readResourcesCSVs() {
+    public ResultDTO readResourcesCSVs() {
         List<ModelDTO> modelDTOS = new ArrayList<>();
         AtomicInteger processedCount = new AtomicInteger(0);
         AtomicInteger diffCount = new AtomicInteger(0);
@@ -155,6 +156,6 @@ public class EvaluationServiceImpl implements IEvaluationService {
         }
         System.out.println("\n\t\t Total directories processed: " + processedCount.get());
         System.out.println("\t\t Directories with differences: " + diffCount.get());
-        return modelDTOS;
+        return new ResultDTO((long) processedCount.get(), (long) diffCount.get(), modelDTOS);
     }
 }
