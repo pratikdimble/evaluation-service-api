@@ -10,4 +10,6 @@ public interface IEvaluationService {
     String readCSV();
 
     List<ModelDTO> readMultipleCSVs();
+
+    List<ModelDTO> readResourcesCSVs();
 }

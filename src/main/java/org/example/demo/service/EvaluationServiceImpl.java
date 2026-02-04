@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -37,10 +38,9 @@ public class EvaluationServiceImpl implements IEvaluationService {
     public List<ModelDTO>  readMultipleCSVs() {
         AtomicInteger processedCount = new AtomicInteger(0);
         AtomicInteger diffCount = new AtomicInteger(0);
-        // Base path where subdirectories like CDIE03, CDIE04, CDIE05 exist
-        Path basePath = Path.of("D:\\Online");
-
         List<ModelDTO> modelDTOS = new ArrayList<>();
+        // Base path where subdirectories exist
+        Path basePath = Path.of("D:\\Online");
 
         // Fixed relative path after each subdirectory
         String fixedPath = "GCP_vsOnPrem\\testplan_dev\\report\\comparison_summary.csv";
@@ -92,6 +92,69 @@ public class EvaluationServiceImpl implements IEvaluationService {
         /*System.out.println("\n\t\t************ EOF *********** EOF  ************ EOF ************** EOF ******* \n");
         System.out.println("\nTotal directories processed: " + processedCount.get());
         System.out.println("Directories with differences: " + diffCount.get());*/
+        return modelDTOS;
+    }
+
+    @Override
+    public List<ModelDTO> readResourcesCSVs() {
+        List<ModelDTO> modelDTOS = new ArrayList<>();
+        AtomicInteger processedCount = new AtomicInteger(0);
+        AtomicInteger diffCount = new AtomicInteger(0);
+        // Base path where subdirectories exist
+        Path basePath = Path.of("src/main/resources/Online");
+
+        // Fixed relative path after each subdirectory
+        String fixedPath = "GCP_vsOnPrem\\testplan_dev\\report\\comparison_summary.csv";
+
+        try (Stream<Path> dirs = Files.list(basePath)) {
+            // Collect all subdirectories dynamically
+            List<Path> subDirs = dirs.filter(Files::isDirectory).toList();
+            for (Path dir : subDirs) {
+                Path csvPath = dir.resolve(fixedPath); // build full path
+                if (Files.exists(csvPath)) {
+                    String resolvedDir = dir.getFileName().toString();
+//                            System.out.println("Processing Model: " + resolvedDir);
+                    AtomicBoolean foundDiff = new AtomicBoolean(false);
+                    List<outputDTO> attributesList = new ArrayList<>();
+
+                    try (Stream<String> lines = Files.lines(csvPath)) {
+                        ModelDTO modelDTO = new ModelDTO();
+                        modelDTO.setModel(resolvedDir);
+                        lines.skip(1) // skip header
+                                .map(line -> line.split(","))
+                                .filter(parts -> {
+                                    int inputARecords = Integer.parseInt(parts[3]);
+                                    int inputBRecords = Integer.parseInt(parts[6]);
+                                    int differences = Integer.parseInt(parts[parts.length - 1]);
+                                    return inputARecords != inputBRecords || differences > 0;
+                                })
+                                .forEach(parts -> {
+                                    attributesList.add(new outputDTO(parts[1],
+                                            Long.valueOf(parts[3]), parts[4],
+                                            Long.valueOf(parts[6]),
+                                            Long.valueOf(parts[parts.length - 1]))
+                                    );
+                                    foundDiff.set(true);
+                                });
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    if (!attributesList.isEmpty()) {
+                        modelDTOS.add(new ModelDTO(resolvedDir, attributesList));
+                    }
+                    if (foundDiff.get()) {
+                        diffCount.incrementAndGet();
+                    }
+                    processedCount.incrementAndGet();
+                } else {
+                    System.out.println("File not found: " + csvPath);
+                }
+                    };
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("\n\t\t Total directories processed: " + processedCount.get());
+        System.out.println("\t\t Directories with differences: " + diffCount.get());
         return modelDTOS;
     }
 }

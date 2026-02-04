@@ -22,7 +22,7 @@ public class EvaluationController {
         return "Hello from Spring Boot (no Initializr)";
     }
 
-    @GetMapping("/evaluate")
+    @GetMapping("/evaluate/csv")
     public ResponseEntity<String> readCSV()
     {
         return ResponseEntity.ok(evaluationService.readCSV());
@@ -32,6 +32,12 @@ public class EvaluationController {
     public ResponseEntity<List<ModelDTO>> readMultipleCSVs()
     {
         return ResponseEntity.ok(evaluationService.readMultipleCSVs());
+    }
+
+    @GetMapping("/evaluate")
+    public ResponseEntity<List<ModelDTO>> readResourcesCSVs()
+    {
+        return ResponseEntity.ok(evaluationService.readResourcesCSVs());
     }
 }
 

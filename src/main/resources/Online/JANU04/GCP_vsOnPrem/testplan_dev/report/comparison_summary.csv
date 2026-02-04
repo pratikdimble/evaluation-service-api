@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+NU Billing,NU_A_BILL.dat,N,50500,NU_B_BILL.dat,N,50500,50500,21,0
+NU Audit,NU_A_AUD.dat,N,50500,NU_B_AUD.dat,N,50500,50500,511,0
+NU CH01,NU_A_CH.dat,N,50500,NU_B_CH.dat,N,50500,50500,401,0
+NU Summary,NU_A_SUM.dat,N,50500,NU_B_SUM.dat,N,50500,50500,88,0
+NU Extract,NU_A_EXT.dat,N,50500,NU_B_EXT.dat,N,50500,50500,144,0

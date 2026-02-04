@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+MU Billing,MU_SRC_BILL.dat,N,1800,MU_TGT_BILL.dat,N,1800,1800,21,0
+MU Audit,MU_SRC_AUD.dat,N,1800,MU_TGT_AUD.dat,N,1800,1800,511,0
+MU CH01,MU_SRC_CH.dat,N,1800,MU_TGT_CH.dat,N,1800,1800,401,0
+MU Summary,MU_SRC_SUM.dat,N,1800,MU_TGT_SUM.dat,N,1800,1800,88,0
+MU Extract,MU_SRC_EXT.dat,N,1800,MU_TGT_EXT.dat,N,1800,1800,144,0

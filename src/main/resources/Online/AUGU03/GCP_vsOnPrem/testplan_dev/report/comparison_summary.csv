@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+THETA Billing,THETA_IN_BILL.dat,N,15000,THETA_OUT_BILL.dat,N,15000,15000,21,0
+THETA Audit,THETA_IN_AUD.dat,N,15000,THETA_OUT_AUD.dat,N,15000,15000,511,0
+THETA CH01,THETA_IN_CH.dat,N,15000,THETA_OUT_CH.dat,N,15000,15000,401,0
+THETA Summary,THETA_IN_SUM.dat,N,15000,THETA_OUT_SUM.dat,N,15000,15000,88,0
+THETA Extract,THETA_IN_EXT.dat,N,15000,THETA_OUT_EXT.dat,N,15000,15000,144,0

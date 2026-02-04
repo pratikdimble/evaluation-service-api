@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+ETA Billing,ETA_FILE_A_BILL.dat,N,6400,ETA_FILE_B_BILL.dat,N,6400,6400,21,0
+ETA Audit,ETA_FILE_A_AUD.dat,N,6400,ETA_FILE_B_AUD.dat,N,6410,6400,511,0
+ETA CH01,ETA_FILE_A_CH.dat,N,6400,ETA_FILE_B_CH.dat,N,6400,6400,401,0
+ETA Summary,ETA_FILE_A_SUM.dat,N,6400,ETA_FILE_B_SUM.dat,N,6400,6400,88,0
+ETA Extract,ETA_FILE_A_EXT.dat,N,6400,ETA_FILE_B_EXT.dat,N,6400,6400,144,0
