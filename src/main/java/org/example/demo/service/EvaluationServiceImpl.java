@@ -175,9 +175,9 @@ public class EvaluationServiceImpl implements IEvaluationService {
                     for (ModelDTO model : modelDTOs) {
                         for (OutputDTO dto : model.getOutputDTOList()) {
                             writer.append(model.getModel()).append(",")
-                                    .append(dto.getInputA()).append(",")
+                                    .append(String.valueOf(dto.getInputA())).append(",")
                                     .append(String.valueOf(dto.getInputARecords())).append(",")
-                                    .append(dto.getInputB()).append(",")
+                                    .append(String.valueOf(dto.getInputB())).append(",")
                                     .append(String.valueOf(dto.getInputBRecords())).append(",")
                                     .append(String.valueOf(dto.getAttributesWithDifferences()))
                                     .append("\n");
