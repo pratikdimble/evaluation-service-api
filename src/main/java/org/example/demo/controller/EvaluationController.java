@@ -35,10 +35,16 @@ public class EvaluationController {
         return ResponseEntity.ok(evaluationService.readMultipleCSVs());
     }
 
-    @GetMapping("/evaluate")
-    public ResponseEntity<ResultDTO> readResourcesCSVs()
+    @GetMapping("/evaluate/online")
+    public ResponseEntity<ResultDTO> evaluateOnlineCSVs()
     {
-        return ResponseEntity.ok(evaluationService.readResourcesCSVs());
+        return ResponseEntity.ok(evaluationService.readResourcesCSVs(false));
+    }
+
+    @GetMapping("/evaluate/batch")
+    public ResponseEntity<ResultDTO> evaluateBatchCSVs()
+    {
+        return ResponseEntity.ok(evaluationService.readResourcesCSVs(true));
     }
 }
 

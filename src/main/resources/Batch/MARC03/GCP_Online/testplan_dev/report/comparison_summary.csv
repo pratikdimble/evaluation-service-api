@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+GAMMA Billing,SRC_GAM_BILL.dat,N,56000,TGT_GAM_BILL.dat,N,56000,56000,21,0
+GAMMA Audit,SRC_GAM_AUD.dat,N,56000,TGT_GAM_AUD.dat,N,56000,56000,511,0
+GAMMA CH01,SRC_GAM_CH.dat,N,56000,TGT_GAM_CH.dat,N,56000,56000,401,0
+GAMMA Summary,SRC_GAM_SUM.dat,N,56000,TGT_GAM_SUM.dat,N,56000,56000,88,0
+GAMMA Extract,SRC_GAM_EXT.dat,N,56000,TGT_GAM_EXT.dat,N,56000,56000,144,0

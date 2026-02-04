@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+XI Billing,XI_SRC_BILL.dat,N,29000,XI_DST_BILL.dat,N,29000,29000,21,0
+XI Audit,XI_SRC_AUD.dat,N,29000,XI_DST_AUD.dat,N,29000,29000,511,0
+XI CH01,XI_SRC_CH.dat,N,29000,XI_DST_CH.dat,N,29000,29000,401,0
+XI Summary,XI_SRC_SUM.dat,N,29000,XI_DST_SUM.dat,N,29000,29000,88,0
+XI Extract,XI_SRC_EXT.dat,N,29000,XI_DST_EXT.dat,N,29000,29000,144,0

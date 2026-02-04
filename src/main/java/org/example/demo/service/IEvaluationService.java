@@ -12,5 +12,5 @@ public interface IEvaluationService {
 
     List<ModelDTO> readMultipleCSVs();
 
-    ResultDTO readResourcesCSVs();
+    ResultDTO readResourcesCSVs(Boolean isBatch);
 }

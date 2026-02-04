@@ -97,15 +97,15 @@ public class EvaluationServiceImpl implements IEvaluationService {
     }
 
     @Override
-    public ResultDTO readResourcesCSVs() {
+    public ResultDTO readResourcesCSVs(Boolean isBatch) {
         List<ModelDTO> modelDTOS = new ArrayList<>();
         AtomicInteger processedCount = new AtomicInteger(0);
         AtomicInteger diffCount = new AtomicInteger(0);
         // Base path where subdirectories exist
-        Path basePath = Path.of("src/main/resources/Online");
+        Path basePath = isBatch? Path.of("src/main/resources/Batch") : Path.of("src/main/resources/Online");
 
         // Fixed relative path after each subdirectory
-        String fixedPath = "GCP_vsOnPrem\\testplan_dev\\report\\comparison_summary.csv";
+        String fixedPath = (isBatch? "GCP_Online" : "GCP_vsOnPrem") +"\\testplan_dev\\report\\comparison_summary.csv";
 
         try (Stream<Path> dirs = Files.list(basePath)) {
             // Collect all subdirectories dynamically

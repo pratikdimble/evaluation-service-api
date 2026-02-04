@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+OMICRON Billing,OMI_IN_BILL.dat,N,6600,OMI_OUT_BILL.dat,N,6600,6600,21,0
+OMICRON Audit,OMI_IN_AUD.dat,N,6600,OMI_OUT_AUD.dat,N,6600,6600,511,0
+OMICRON CH01,OMI_IN_CH.dat,N,6600,OMI_OUT_CH.dat,N,6600,6600,401,0
+OMICRON Summary,OMI_IN_SUM.dat,N,6600,OMI_OUT_SUM.dat,N,6600,6600,88,0
+OMICRON Extract,OMI_IN_EXT.dat,N,6600,OMI_OUT_EXT.dat,N,6600,6600,144,0

@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+ZETA Billing,ZETA_SRC_BILL.dat,N,920,ZETA_TGT_BILL.dat,N,920,920,21,0
+ZETA Audit,ZETA_SRC_AUD.dat,N,920,ZETA_TGT_AUD.dat,N,920,920,511,0
+ZETA CH01,ZETA_SRC_CH.dat,N,920,ZETA_TGT_CH.dat,N,920,920,401,0
+ZETA Summary,ZETA_SRC_SUM.dat,N,920,ZETA_TGT_SUM.dat,N,920,920,88,0
+ZETA Extract,ZETA_SRC_EXT.dat,N,920,ZETA_TGT_EXT.dat,N,920,920,144,0
