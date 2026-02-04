@@ -12,6 +12,10 @@ import lombok.ToString;
 public class outputDTO {
 
     private String inputA;
+    private Long inputARecords;
     private String inputB;
+    private Long inputBRecords;
+    private Long attributesWithDifferences;
+
 
 }

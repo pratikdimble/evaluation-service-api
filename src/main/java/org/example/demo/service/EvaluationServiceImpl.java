@@ -46,11 +46,11 @@ public class EvaluationServiceImpl implements IEvaluationService {
         String fixedPath = "GCP_vsOnPrem\\testplan_dev\\report\\comparison_summary.csv";
 //        System.out.println("\n\n\t\t*********** Differences found for below Comparision model  ****************** ");
         try (Stream<Path> dirs = Files.list(basePath)) {
-            dirs.filter(Files::isDirectory) // only directories like CDIE03, CDIE04...
+            dirs.filter(Files::isDirectory) //
                     .forEach(dir -> {
                         Path csvPath = dir.resolve(fixedPath); // build full path
                         if (Files.exists(csvPath)) {
-                            String resolvedDir = dir.getFileName().toString(); // just CDIE03, CDIE04, etc.
+                            String resolvedDir = dir.getFileName().toString();
 //                            System.out.println("Processing Model: " + resolvedDir);
                             AtomicBoolean foundDiff = new AtomicBoolean(false);
                             List<outputDTO> attributesList = new ArrayList<>();
@@ -68,7 +68,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
                                         })
                                         //  .filter(parts -> Integer.parseInt(parts[parts.length - 1]) > 0)
                                         .forEach(parts -> {
-                                            attributesList.add(new outputDTO(parts[1], parts[4]));
+                                            attributesList.add(new outputDTO(parts[1], Long.valueOf(parts[3]), parts[4],Long.valueOf(parts[6]), Long.valueOf(parts[parts.length - 1])));
                                             foundDiff.set(true);
 //                                            System.out.println("\t\tInputA: " + parts[1] + " | InputB: " + parts[4] + "\n");
                                         });
