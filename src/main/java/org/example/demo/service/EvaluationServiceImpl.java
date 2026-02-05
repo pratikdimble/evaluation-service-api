@@ -121,7 +121,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
 
         // Fixed relative path after each subdirectory
 //        String fixedPath = (isBatch? "GCP_Online" : "GCP_vsOnPrem") +"\\testplan_dev\\report\\comparison_summary.csv";
-        String fixedPath = this.resolveFixedPath(isBatch);
+        Path fixedPath = this.resolveFixedPath(isBatch);
 
         try (Stream<Path> dirs = Files.list(basePath)) {
             // Collect all subdirectories dynamically
@@ -216,8 +216,8 @@ public class EvaluationServiceImpl implements IEvaluationService {
         return Path.of(base);
     }
 
-    private String resolveFixedPath(boolean isBatch) {
+    private Path resolveFixedPath(boolean isBatch) {
         String fixed = isBatch ? batchFixed : onlineFixed;
-        return Paths.get(fixed, subPath.split("/")).toString();
+        return Paths.get(fixed, subPath.split("/"));
     }
 }
