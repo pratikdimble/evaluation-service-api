@@ -12,8 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -286,6 +285,42 @@ public class EvaluationServiceImpl implements IEvaluationService {
     }
 
     private void getData(Stream<String> lines, List<OutputDTO> attributesList, AtomicBoolean foundDiff){
+        Iterator<String> iterator = lines.iterator();
+        if (!iterator.hasNext()) {
+            return; // empty file
+        }
+
+        // Read header row
+        String headerLine = iterator.next();
+        String[] headers = headerLine.split(",");
+        Map<String, Integer> headerIndex = new HashMap<>();
+        for (int i = 0; i < headers.length; i++) {
+            headerIndex.put(headers[i].trim(), i);
+        }
+
+        // Now process remaining lines
+        while (iterator.hasNext()) {
+            String line = iterator.next();
+            String[] parts = line.split(",");
+            int inputARecords = Integer.parseInt(parts[headerIndex.get("InputA Records")]);
+            int inputBRecords = Integer.parseInt(parts[headerIndex.get("InputB Records")]);
+            int differences   = Integer.parseInt(parts[headerIndex.get("Attributes with Differences")]);
+
+            if (inputARecords != inputBRecords || differences > 0) {
+                attributesList.add(new OutputDTO(
+                        parts[headerIndex.get("InputA")],
+                        Long.valueOf(parts[headerIndex.get("InputA Records")]),
+                        parts[headerIndex.get("InputB")],
+                        Long.valueOf(parts[headerIndex.get("InputB Records")]),
+                        Long.valueOf(parts[headerIndex.get("Attributes with Differences")])
+                ));
+                foundDiff.set(true);
+            }
+        }
+    }
+
+    @Deprecated
+    private void getData1(Stream<String> lines, List<OutputDTO> attributesList, AtomicBoolean foundDiff){
         lines.skip(1) // skip header
                 .map(line -> line.split(","))
                 .filter(parts -> {
