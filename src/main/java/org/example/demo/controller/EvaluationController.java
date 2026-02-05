@@ -1,6 +1,8 @@
 package org.example.demo.controller;
 
+import io.swagger.v3.oas.annotations.Parameter;
 import org.example.demo.model.ModelDTO;
+import org.example.demo.model.OutputDTO;
 import org.example.demo.model.ResultDTO;
 import org.example.demo.service.IEvaluationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,11 +53,60 @@ public class EvaluationController {
     }
 
     @Operation(summary = "Export results to CSV", description = "Exports evaluation results into a CSV file")
-    @GetMapping("/exportCsv")
+    @GetMapping("/export-csv")
     public String exportCsv(@RequestParam(defaultValue = "false") boolean isBatch) {
         evaluationService.exportCsv(isBatch);
         return "CSV export triggered. Check " +
                 "result_summary" + (isBatch ? "_batch" : "_online") + ".csv" +
                 " in your application directory.";
+    }
+
+    @Operation(
+            summary = "Fetch model details",
+            description = "Fetches detailed OutputDTO records for a specific model directory. " +
+                    "Pass the model name (directory) and whether to use Batch or Online mode."
+    )
+    @GetMapping("/model-detail/{model}")
+    public ResponseEntity<List<OutputDTO>> fetchModelDetail(
+            @Parameter(description = "Model directory name, e.g. APRI03")
+            @PathVariable String model,
+            @Parameter(description = "Set true for Batch mode, false for Online mode")
+            @RequestParam(defaultValue = "false") boolean isBatch) {
+
+        List<OutputDTO> details = evaluationService.fetchModelDetail(model, isBatch);
+        return ResponseEntity.ok(details);
+    }
+
+    @Operation(
+            summary = "Export all models summary CSV",
+            description = "Exports evaluation results for all models into a summary CSV file. " +
+                    "Set isBatch=true for Batch mode, false for Online mode."
+    )
+    @GetMapping("/export-model-csv")
+    public ResponseEntity<String> exportModelCsv(
+            @Parameter(description = "Set true for Batch mode, false for Online mode")
+            @RequestParam(defaultValue = "false") boolean isBatch) {
+
+        evaluationService.exportModelCsv(isBatch);
+        return ResponseEntity.ok("Model summary CSV export triggered for " +
+                (isBatch ? "Batch" : "Online") + " mode.");
+    }
+
+    @Operation(
+            summary = "Export detail CSV for a specific model",
+            description = "Exports detailed evaluation results for a given model into a CSV file. " +
+                    "Provide the model name as a path variable and set isBatch accordingly."
+    )
+    @GetMapping("/export-detail-csv/{model}")
+    public ResponseEntity<String> exportDetailCsv(
+            @Parameter(description = "Model directory name, e.g. APRI03")
+            @PathVariable String model,
+
+            @Parameter(description = "Set true for Batch mode, false for Online mode")
+            @RequestParam(defaultValue = "false") boolean isBatch) {
+
+        evaluationService.exportDetailCsv(model, isBatch);
+        return ResponseEntity.ok("Detail CSV export triggered for model " + model +
+                " in " + (isBatch ? "Batch" : "Online") + " mode.");
     }
 }
