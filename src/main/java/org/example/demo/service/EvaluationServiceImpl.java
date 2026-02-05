@@ -3,12 +3,15 @@ package org.example.demo.service;
 import org.example.demo.model.ResultDTO;
 import org.example.demo.model.OutputDTO;
 import org.example.demo.model.ModelDTO;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,6 +20,17 @@ import java.util.stream.Stream;
 
 @Service
 public class EvaluationServiceImpl implements IEvaluationService {
+
+    @Value("${csv.base.online}")
+    private String onlineBase;
+    @Value("${csv.base.batch}")
+    private String batchBase;
+    @Value("${csv.fixed.online}")
+    private String onlineFixed;
+    @Value("${csv.fixed.batch}")
+    private String batchFixed;
+    @Value("${csv.subpath}")
+    private String subPath;
 
     @Override
     public String readCSV() {
@@ -102,10 +116,12 @@ public class EvaluationServiceImpl implements IEvaluationService {
         AtomicInteger processedCount = new AtomicInteger(0);
         AtomicInteger diffCount = new AtomicInteger(0);
         // Base path where subdirectories exist
-        Path basePath = isBatch? Path.of("src/main/resources/Batch") : Path.of("src/main/resources/Online");
+//        Path basePath = isBatch? Path.of("src/main/resources/Batch") : Path.of("src/main/resources/Online");
+        Path basePath = this.resolveBasePath(isBatch);
 
         // Fixed relative path after each subdirectory
-        String fixedPath = (isBatch? "GCP_Online" : "GCP_vsOnPrem") +"\\testplan_dev\\report\\comparison_summary.csv";
+//        String fixedPath = (isBatch? "GCP_Online" : "GCP_vsOnPrem") +"\\testplan_dev\\report\\comparison_summary.csv";
+        String fixedPath = this.resolveFixedPath(isBatch);
 
         try (Stream<Path> dirs = Files.list(basePath)) {
             // Collect all subdirectories dynamically
@@ -190,5 +206,18 @@ public class EvaluationServiceImpl implements IEvaluationService {
             }
 
         }
+    }
+
+    /*********************************
+     * HELPER METHODS STARTS FROM HERE
+     * *******************************/
+    private Path resolveBasePath(boolean isBatch) {
+        String base = isBatch ? batchBase : onlineBase;
+        return Path.of(base);
+    }
+
+    private String resolveFixedPath(boolean isBatch) {
+        String fixed = isBatch ? batchFixed : onlineFixed;
+        return Paths.get(fixed, subPath.split("/")).toString();
     }
 }
