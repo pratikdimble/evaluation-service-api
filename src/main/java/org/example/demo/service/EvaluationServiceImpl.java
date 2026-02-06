@@ -123,7 +123,38 @@ public class EvaluationServiceImpl implements IEvaluationService {
         // Fixed relative path after each subdirectory
         Path fixedPath = this.resolveFixedPath(isBatch);
 
-        try (Stream<Path> dirs = Files.list(basePath)) {
+        ClassPathResource manifest = new ClassPathResource(isBatch ? "batch.txt" : "online.txt");
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(manifest.getInputStream(), StandardCharsets.UTF_8))) {
+            List<String> resourcePaths = reader.lines().toList();
+//            String resolvedDir = dir.getFileName().toString();
+            AtomicBoolean foundDiff = new AtomicBoolean(false);
+            List<OutputDTO> attributesList = new ArrayList<>();
+
+            for (String resourcePath : resourcePaths) {
+                ClassPathResource csv = new ClassPathResource(resourcePath);
+                String modelName = extractModelName(resourcePath);
+                ModelDTO modelDTO = new ModelDTO();
+                modelDTO.setModel(modelName);
+                if (csv.exists()) {
+                    try (BufferedReader csvReader = new BufferedReader(
+                            new InputStreamReader(csv.getInputStream(), StandardCharsets.UTF_8))) {
+//                                    processCsv(csvReader.lines());
+                        getData(csvReader.lines(), attributesList, foundDiff);
+                        if (!attributesList.isEmpty()) {
+                            modelDTOS.add(new ModelDTO(modelName, attributesList));
+                        }
+                        if (foundDiff.get()) {
+                            diffCount.incrementAndGet();
+                        }
+                        processedCount.incrementAndGet();
+                    }
+                } else {
+                    System.out.println("File not found: " + csv);
+                }
+            }
+        }
+        /*try (Stream<Path> dirs = Files.list(basePath)) {
             // Collect all subdirectories dynamically
             List<Path> subDirs = dirs.filter(Files::isDirectory).toList();
             for (Path dir : subDirs) {
@@ -153,7 +184,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
             };
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }*/
         System.out.println("\n\t\t Total directories processed: " + processedCount.get());
         System.out.println("\t\t Directories with differences: " + diffCount.get());
         return new ResultDTO((long) processedCount.get(), (long) diffCount.get(), modelDTOS);
@@ -321,6 +352,17 @@ public class EvaluationServiceImpl implements IEvaluationService {
             }
         }
     }
+
+    private String extractModelName(String resourcePath) {
+        String[] parts = resourcePath.split("/");
+        for (int i = 0; i < parts.length; i++) {
+            if ("Online".equals(parts[i])) {
+                return parts[i + 1]; // e.g. JANU03
+            }
+        }
+        return null;
+    }
+
 
     @Deprecated
     private void getData1(Stream<String> lines, List<OutputDTO> attributesList, AtomicBoolean foundDiff){
