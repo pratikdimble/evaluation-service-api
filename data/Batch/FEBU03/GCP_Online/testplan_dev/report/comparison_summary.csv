@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+BETA Billing,IN_BETA_BILL_01.dat,N,8450,OUT_BETA_BILL_01.dat,N,8450,8450,21,0
+BETA Audit,IN_BETA_AUD_01.dat,N,8450,OUT_BETA_AUD_01.dat,N,8450,8450,511,0
+BETA CH01,IN_BETA_CH_01.dat,N,8450,OUT_BETA_CH_01.dat,N,8450,8450,401,0
+BETA Summary,IN_BETA_SUM_01.dat,N,8450,OUT_BETA_SUM_01.dat,N,8450,8450,88,0
+BETA Extract,IN_BETA_EXT_01.dat,N,8450,OUT_BETA_EXT_01.dat,N,8450,8450,144,0

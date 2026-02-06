@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+KAPPA Billing,KAP_A_BILL.dat,N,41000,KAP_B_BILL.dat,N,41000,41000,21,0
+KAPPA Audit,KAP_A_AUD.dat,N,41000,KAP_B_AUD.dat,N,41000,41000,511,0
+KAPPA CH01,KAP_A_CH.dat,N,41000,KAP_B_CH.dat,N,41000,41000,401,0
+KAPPA Summary,KAP_A_SUM.dat,N,41000,KAP_B_SUM.dat,N,41000,41000,88,0
+KAPPA Extract,KAP_A_EXT.dat,N,41000,KAP_B_EXT.dat,N,41000,41000,144,0

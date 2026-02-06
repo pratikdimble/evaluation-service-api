@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+EPSILON Billing,EPS_IN_BILL.dat,N,78000,EPS_OUT_BILL.dat,N,78000,78000,21,0
+EPSILON Audit,EPS_IN_AUD.dat,N,78000,EPS_OUT_AUD.dat,N,78000,78000,511,0
+EPSILON CH01,EPS_IN_CH.dat,N,78000,EPS_OUT_CH.dat,N,78000,78000,401,0
+EPSILON Summary,EPS_IN_SUM.dat,N,78000,EPS_OUT_SUM.dat,N,78000,78000,88,0
+EPSILON Extract,EPS_IN_EXT.dat,N,78000,EPS_OUT_EXT.dat,N,78000,78000,144,0

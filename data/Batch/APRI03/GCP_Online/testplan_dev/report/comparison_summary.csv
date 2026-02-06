@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+DELTA Billing,DELTA_IN_BILL.dat,N,3100,DELTA_OUT_BILL.dat,N,3100,3100,21,0
+DELTA Audit,DELTA_IN_AUD.dat,N,3100,DELTA_OUT_AUD.dat,N,3100,3100,511,0
+DELTA CH01,DELTA_IN_CH.dat,N,3100,DELTA_OUT_CH.dat,N,3100,3100,401,0
+DELTA Summary,DELTA_IN_SUM.dat,N,3100,DELTA_OUT_SUM.dat,N,3100,3100,88,0
+DELTA Extract,DELTA_IN_EXT.dat,N,3100,DELTA_OUT_EXT.dat,N,3100,3100,144,0

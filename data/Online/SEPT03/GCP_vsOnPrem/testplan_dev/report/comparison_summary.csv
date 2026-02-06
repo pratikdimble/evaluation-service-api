@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+IOTA Billing,IOTA_SRC_BILL.dat,N,22500,IOTA_DST_BILL.dat,N,22500,22500,21,0
+IOTA Audit,IOTA_SRC_AUD.dat,N,22500,IOTA_DST_AUD.dat,N,22500,22500,511,0
+IOTA CH01,IOTA_SRC_CH.dat,N,22500,IOTA_DST_CH.dat,N,22500,22500,401,0
+IOTA Summary,IOTA_SRC_SUM.dat,N,22500,IOTA_DST_SUM.dat,N,22500,22500,88,0
+IOTA Extract,IOTA_SRC_EXT.dat,N,22500,IOTA_DST_EXT.dat,N,22500,22500,144,0

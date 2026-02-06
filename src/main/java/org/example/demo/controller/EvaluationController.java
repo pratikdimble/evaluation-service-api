@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,12 +23,6 @@ public class EvaluationController {
     @Autowired
     IEvaluationService evaluationService;
 
-    @Operation(summary = "Simple hello endpoint", description = "Returns a hello message")
-    @GetMapping("/hello")
-    public String hello() {
-        return "Hello from Spring Boot (no Initializr)";
-    }
-
    /* @Operation(summary = "Read single CSV", description = "Reads a single CSV file and returns its content")
     @GetMapping("/csv")
     public ResponseEntity<String> readCSV() {
@@ -40,21 +35,23 @@ public class EvaluationController {
         return ResponseEntity.ok(evaluationService.readMultipleCSVs());
     }*/
 
-    @Operation(summary = "Evaluate Online CSVs", description = "Evaluates CSVs from online resources")
-    @GetMapping("/online")
-    public ResponseEntity<ResultDTO> evaluateOnlineCSVs() {
-        return ResponseEntity.ok(evaluationService.readResourcesCSVs(false));
+    @Operation(summary = "Evaluate Online or Batch CSVs",
+            description = "Evaluates CSVs from online/batch resources. " +
+            "Set isBatch=true for Batch mode, false for Online mode.")
+    @GetMapping()
+    public ResponseEntity<ResultDTO> evaluateOnlineCSVs(@RequestParam(defaultValue = "false") boolean isBatch) throws IOException {
+        return ResponseEntity.ok(evaluationService.readResourcesCSVs(isBatch));
     }
 
-    @Operation(summary = "Evaluate Batch CSVs", description = "Evaluates CSVs from batch resources")
-    @GetMapping("/batch")
-    public ResponseEntity<ResultDTO> evaluateBatchCSVs() {
+   /* @Operation(summary = "Evaluate Batch CSVs", description = "Evaluates CSVs from batch resources")
+    @GetMapping()
+    public ResponseEntity<ResultDTO> evaluateBatchCSVs() throws IOException {
         return ResponseEntity.ok(evaluationService.readResourcesCSVs(true));
-    }
+    }*/
 
-    @Operation(summary = "Export results to CSV", description = "Exports evaluation results into a CSV file")
+    @Operation(summary = "Export model with details results to CSV", description = "Exports evaluation results into a CSV file")
     @GetMapping("/export-csv")
-    public String exportCsv(@RequestParam(defaultValue = "false") boolean isBatch) {
+    public String exportCsv(@RequestParam(defaultValue = "false") boolean isBatch) throws IOException {
         evaluationService.exportCsv(isBatch);
         return "CSV export triggered. Check " +
                 "result_summary" + (isBatch ? "_batch" : "_online") + ".csv" +
@@ -82,10 +79,10 @@ public class EvaluationController {
             description = "Exports evaluation results for all models into a summary CSV file. " +
                     "Set isBatch=true for Batch mode, false for Online mode."
     )
-    @GetMapping("/export-model-csv")
+    @GetMapping("/export")
     public ResponseEntity<String> exportModelCsv(
             @Parameter(description = "Set true for Batch mode, false for Online mode")
-            @RequestParam(defaultValue = "false") boolean isBatch) {
+            @RequestParam(defaultValue = "false") boolean isBatch) throws IOException {
 
         evaluationService.exportModelCsv(isBatch);
         return ResponseEntity.ok("Model summary CSV export triggered for " +
@@ -97,7 +94,7 @@ public class EvaluationController {
             description = "Exports detailed evaluation results for a given model into a CSV file. " +
                     "Provide the model name as a path variable and set isBatch accordingly."
     )
-    @GetMapping("/export-detail-csv/{model}")
+    @GetMapping("/export/{model}")
     public ResponseEntity<String> exportDetailCsv(
             @Parameter(description = "Model directory name, e.g. APRI03")
             @PathVariable String model,

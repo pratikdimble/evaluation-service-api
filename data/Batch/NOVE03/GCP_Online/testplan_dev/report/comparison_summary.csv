@@ -1,0 +1,6 @@
+Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+LAMBDA Billing,LAM_IN_BILL.dat,N,9700,LAM_OUT_BILL.dat,N,9700,9700,21,0
+LAMBDA Audit,LAM_IN_AUD.dat,N,9700,LAM_OUT_AUD.dat,N,9700,9700,511,0
+LAMBDA CH01,LAM_IN_CH.dat,N,9700,LAM_OUT_CH.dat,N,9700,9700,401,0
+LAMBDA Summary,LAM_IN_SUM.dat,N,9700,LAM_OUT_SUM.dat,N,9700,9700,88,0
+LAMBDA Extract,LAM_IN_EXT.dat,N,9700,LAM_OUT_EXT.dat,N,9700,9700,144,2

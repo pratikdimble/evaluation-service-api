@@ -7,8 +7,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -110,7 +113,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
     }
 
     @Override
-    public ResultDTO readResourcesCSVs(Boolean isBatch) {
+    public ResultDTO readResourcesCSVs(Boolean isBatch) throws IOException {
         List<ModelDTO> modelDTOS = new ArrayList<>();
         AtomicInteger processedCount = new AtomicInteger(0);
         AtomicInteger diffCount = new AtomicInteger(0);
@@ -147,7 +150,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
                 } else {
                     System.out.println("File not found: " + csvPath);
                 }
-                    };
+            };
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -157,7 +160,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
     }
 
     @Override
-    public void exportCsv(Boolean isBatch) {
+    public void exportCsv(Boolean isBatch) throws IOException {
         ResultDTO  resultDTO = this.readResourcesCSVs(isBatch);
         if(resultDTO != null){
             if(!resultDTO.getModelDTOs().isEmpty()){
@@ -217,7 +220,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
     }
 
     @Override
-    public void exportModelCsv(Boolean isBatch) {
+    public void exportModelCsv(Boolean isBatch) throws IOException {
         ResultDTO  resultDTO = this.readResourcesCSVs(isBatch);
         if(resultDTO != null){
             if(!resultDTO.getModelDTOs().isEmpty()){
@@ -338,4 +341,5 @@ public class EvaluationServiceImpl implements IEvaluationService {
                     foundDiff.set(true);
                 });
     }
+
 }

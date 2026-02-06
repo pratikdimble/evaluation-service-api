@@ -1,0 +1,15 @@
+/data/Online/JANU03/testplan_dev/report/comparison_summary.csv
+/data/Online/FEBU03/testplan_dev/report/comparison_summary.csv
+/data/Online/MARC03/testplan_dev/report/comparison_summary.csv
+/data/Online/APRI03/testplan_dev/report/comparison_summary.csv
+/data/Online/MAYY03/testplan_dev/report/comparison_summary.csv
+/data/Online/JUNE03/testplan_dev/report/comparison_summary.csv
+/data/Online/JULY03/testplan_dev/report/comparison_summary.csv
+/data/Online/AUGU03/testplan_dev/report/comparison_summary.csv
+/data/Online/SEPT03/testplan_dev/report/comparison_summary.csv
+/data/Online/OCTO03/testplan_dev/report/comparison_summary.csv
+/data/Online/NOVE03/testplan_dev/report/comparison_summary.csv
+/data/Online/DECE03/testplan_dev/report/comparison_summary.csv
+/data/Online/JANU04/testplan_dev/report/comparison_summary.csv
+/data/Online/FEBU04/testplan_dev/report/comparison_summary.csv
+/data/Online/MARC04/testplan_dev/report/comparison_summary.csv
