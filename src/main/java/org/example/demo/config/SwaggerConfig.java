@@ -14,7 +14,7 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-                .addServersItem(new Server().url("https://evaluation-service-api-production.up.railway.app"))
+                .addServersItem(new Server().url("https://evaluation-service-api-production.up.railway.app/api"))
                 .info(new Info()
                         .title("Evaluation Service API")
                         .version("v1.0")
