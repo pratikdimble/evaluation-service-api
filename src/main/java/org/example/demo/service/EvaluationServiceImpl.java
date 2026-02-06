@@ -154,37 +154,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
                 }
             }
         }
-        /*try (Stream<Path> dirs = Files.list(basePath)) {
-            // Collect all subdirectories dynamically
-            List<Path> subDirs = dirs.filter(Files::isDirectory).toList();
-            for (Path dir : subDirs) {
-                Path csvPath = dir.resolve(fixedPath); // build full path
-                if (Files.exists(csvPath)) {
-                    String resolvedDir = dir.getFileName().toString();
-                    AtomicBoolean foundDiff = new AtomicBoolean(false);
-                    List<OutputDTO> attributesList = new ArrayList<>();
 
-                    try (Stream<String> lines = Files.lines(csvPath)) {
-                        ModelDTO modelDTO = new ModelDTO();
-                        modelDTO.setModel(resolvedDir);
-                        getData(lines, attributesList, foundDiff);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    if (!attributesList.isEmpty()) {
-                        modelDTOS.add(new ModelDTO(resolvedDir, attributesList));
-                    }
-                    if (foundDiff.get()) {
-                        diffCount.incrementAndGet();
-                    }
-                    processedCount.incrementAndGet();
-                } else {
-                    System.out.println("File not found: " + csvPath);
-                }
-            };
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
         System.out.println("\n\t\t Total directories processed: " + processedCount.get());
         System.out.println("\t\t Directories with differences: " + diffCount.get());
         return new ResultDTO((long) processedCount.get(), (long) diffCount.get(), modelDTOS);
@@ -356,7 +326,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
     private String extractModelName(String resourcePath) {
         String[] parts = resourcePath.split("/");
         for (int i = 0; i < parts.length; i++) {
-            if ("Online".equals(parts[i])) {
+            if ("Online".equals(parts[i]) || "Batch".equals(parts[i])) {
                 return parts[i + 1]; // e.g. JANU03
             }
         }
