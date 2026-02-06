@@ -128,8 +128,6 @@ public class EvaluationServiceImpl implements IEvaluationService {
                 new InputStreamReader(manifest.getInputStream(), StandardCharsets.UTF_8))) {
             List<String> resourcePaths = reader.lines().toList();
 //            String resolvedDir = dir.getFileName().toString();
-            AtomicBoolean foundDiff = new AtomicBoolean(false);
-            List<OutputDTO> attributesList = new ArrayList<>();
 
             for (String resourcePath : resourcePaths) {
                 ClassPathResource csv = new ClassPathResource(resourcePath);
@@ -140,6 +138,8 @@ public class EvaluationServiceImpl implements IEvaluationService {
                     try (BufferedReader csvReader = new BufferedReader(
                             new InputStreamReader(csv.getInputStream(), StandardCharsets.UTF_8))) {
 //                                    processCsv(csvReader.lines());
+                        AtomicBoolean foundDiff = new AtomicBoolean(false);
+                        List<OutputDTO> attributesList = new ArrayList<>();
                         getData(csvReader.lines(), attributesList, foundDiff);
                         if (!attributesList.isEmpty()) {
                             modelDTOS.add(new ModelDTO(modelName, attributesList));

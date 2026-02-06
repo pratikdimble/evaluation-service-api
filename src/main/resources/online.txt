@@ -1,4 +1,4 @@
-Online/JANU03//GCP_vsOnPrem/testplan_dev/report/comparison_summary.csv
+Online/JANU03/GCP_vsOnPrem/testplan_dev/report/comparison_summary.csv
 Online/FEBU03/GCP_vsOnPrem/testplan_dev/report/comparison_summary.csv
 Online/MARC03/GCP_vsOnPrem/testplan_dev/report/comparison_summary.csv
 Online/APRI03/GCP_vsOnPrem/testplan_dev/report/comparison_summary.csv
