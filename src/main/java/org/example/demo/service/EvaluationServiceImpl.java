@@ -271,7 +271,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
     }
 
     @Override
-    public void exportDetailCsv(String model, Boolean isBatch) {
+    public String exportDetailCsv(String model, Boolean isBatch) {
         List<OutputDTO>  outputDTOs = this.fetchModelDetail(model, isBatch);
         if(!outputDTOs.isEmpty()){
             // Export to CSV
@@ -294,8 +294,10 @@ public class EvaluationServiceImpl implements IEvaluationService {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            return "Detail CSV export triggered for model " + model + " in " + (isBatch ? "Batch" : "Online") + " mode.";
 
-        }
+        }else
+            return "No path found for model: " + model + " in " + (isBatch ? "Batch" : "Online") + " mode.";
     }
 
     /*********************************

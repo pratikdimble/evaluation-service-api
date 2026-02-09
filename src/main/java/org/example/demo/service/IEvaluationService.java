@@ -22,5 +22,6 @@ public interface IEvaluationService {
 
     void exportModelCsv(Boolean isBatch) throws IOException;
 
-    void exportDetailCsv(String model, Boolean isBatch);
+    String  exportDetailCsv(String model, Boolean isBatch);
+
 }

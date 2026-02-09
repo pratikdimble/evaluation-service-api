@@ -102,8 +102,7 @@ public class EvaluationController {
             @Parameter(description = "Set true for Batch mode, false for Online mode")
             @RequestParam(defaultValue = "false") boolean isBatch) {
 
-        evaluationService.exportDetailCsv(model, isBatch);
-        return ResponseEntity.ok("Detail CSV export triggered for model " + model +
-                " in " + (isBatch ? "Batch" : "Online") + " mode.");
+
+        return ResponseEntity.ok(evaluationService.exportDetailCsv(model, isBatch));
     }
 }
