@@ -117,11 +117,6 @@ public class EvaluationServiceImpl implements IEvaluationService {
         List<ModelDTO> modelDTOS = new ArrayList<>();
         AtomicInteger processedCount = new AtomicInteger(0);
         AtomicInteger diffCount = new AtomicInteger(0);
-        // Base path where subdirectories exist
-        Path basePath = this.resolveBasePath(isBatch);
-
-        // Fixed relative path after each subdirectory
-        Path fixedPath = this.resolveFixedPath(isBatch);
 
         ClassPathResource manifest = new ClassPathResource(isBatch ? "batch.txt" : "online.txt");
         try (BufferedReader reader = new BufferedReader(
@@ -357,7 +352,6 @@ public class EvaluationServiceImpl implements IEvaluationService {
         }
         return null;
     }
-
 
     @Deprecated
     private void getData1(Stream<String> lines, List<OutputDTO> attributesList, AtomicBoolean foundDiff){

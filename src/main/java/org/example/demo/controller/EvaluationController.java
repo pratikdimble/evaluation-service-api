@@ -23,18 +23,6 @@ public class EvaluationController {
     @Autowired
     IEvaluationService evaluationService;
 
-   /* @Operation(summary = "Read single CSV", description = "Reads a single CSV file and returns its content")
-    @GetMapping("/csv")
-    public ResponseEntity<String> readCSV() {
-        return ResponseEntity.ok(evaluationService.readCSV());
-    }
-
-    @Operation(summary = "Read multiple CSVs", description = "Reads multiple CSV files and returns a list of models")
-    @GetMapping("/bulk")
-    public ResponseEntity<List<ModelDTO>> readMultipleCSVs() {
-        return ResponseEntity.ok(evaluationService.readMultipleCSVs());
-    }*/
-
     @Operation(summary = "Evaluate Online or Batch CSVs",
             description = "Evaluates CSVs from online/batch resources. " +
             "Set isBatch=true for Batch mode, false for Online mode.")
@@ -42,12 +30,6 @@ public class EvaluationController {
     public ResponseEntity<ResultDTO> evaluateOnlineCSVs(@RequestParam(defaultValue = "false") boolean isBatch) throws IOException {
         return ResponseEntity.ok(evaluationService.readResourcesCSVs(isBatch));
     }
-
-   /* @Operation(summary = "Evaluate Batch CSVs", description = "Evaluates CSVs from batch resources")
-    @GetMapping()
-    public ResponseEntity<ResultDTO> evaluateBatchCSVs() throws IOException {
-        return ResponseEntity.ok(evaluationService.readResourcesCSVs(true));
-    }*/
 
     @Operation(summary = "Export model with details results to CSV", description = "Exports evaluation results into a CSV file")
     @GetMapping("/export-csv")
