@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -15,5 +16,7 @@ public class ModelDTO {
 
     private String model;
     private List<OutputDTO> outputDTOList;
+    private Date modifiedDate;
+
 
 }

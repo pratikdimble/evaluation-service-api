@@ -7,10 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -93,7 +90,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
                                 e.printStackTrace();
                             }
                             if (!attributesList.isEmpty()) {
-                                modelDTOS.add(new ModelDTO(resolvedDir, attributesList));
+                                modelDTOS.add(new ModelDTO(resolvedDir, attributesList, null));
                             }
                             if (foundDiff.get()) {
                                 diffCount.incrementAndGet();
@@ -133,12 +130,11 @@ public class EvaluationServiceImpl implements IEvaluationService {
                     try (BufferedReader csvReader = new BufferedReader(
                             new InputStreamReader(csv.getInputStream(), StandardCharsets.UTF_8))) {
 //                                    processCsv(csvReader.lines());
+
                         AtomicBoolean foundDiff = new AtomicBoolean(false);
                         List<OutputDTO> attributesList = new ArrayList<>();
                         getData(csvReader.lines(), attributesList, foundDiff);
-                        if (!attributesList.isEmpty()) {
-                            modelDTOS.add(new ModelDTO(modelName, attributesList));
-                        }
+                        modelDTOS.add(new ModelDTO(modelName, attributesList, new Date(csv.getFile().lastModified())));
                         if (foundDiff.get()) {
                             diffCount.incrementAndGet();
                         }
