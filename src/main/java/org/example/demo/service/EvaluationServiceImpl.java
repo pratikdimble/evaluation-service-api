@@ -197,7 +197,30 @@ public class EvaluationServiceImpl implements IEvaluationService {
     public List<OutputDTO> fetchModelDetail(String model, Boolean isBatch) {
         List<OutputDTO> outputDTOS = new ArrayList<>();
         AtomicBoolean foundDiff = new AtomicBoolean(false);
-        // Base path (Batch or Online) — you can decide which one to use or pass as parameter
+
+        ClassPathResource manifest = new ClassPathResource(isBatch ? "batch.txt" : "online.txt");
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(manifest.getInputStream(), StandardCharsets.UTF_8))) {
+            List<String> resourcePaths = reader.lines().toList();
+            Optional<String> pathOpt = resourcePaths.stream()
+                    .filter(p -> p.contains("/" + model + "/"))
+                    .findFirst();
+
+            if (pathOpt.isPresent()) {
+                String resourcePath = pathOpt.get(); // e.g. Batch/abc04/testplan_dev/report/comparison_summary.csv
+                ClassPathResource csv = new ClassPathResource(resourcePath);
+                try (BufferedReader csvReader = new BufferedReader(
+                        new InputStreamReader(csv.getInputStream(), StandardCharsets.UTF_8))) {
+                    getData(csvReader.lines(), outputDTOS, foundDiff);
+                }
+            } else {
+                System.out.println("No path found for model: " + model);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        /*// Base path (Batch or Online) — you can decide which one to use or pass as parameter
         Path basePath = this.resolveBasePath(isBatch); // false = Online, true = Batch
 
         // Fixed relative path after each subdirectory
@@ -215,7 +238,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
             getData(lines, outputDTOS, foundDiff);
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }*/
 
         return outputDTOS;
     }
