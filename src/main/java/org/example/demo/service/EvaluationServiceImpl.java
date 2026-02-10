@@ -134,7 +134,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
                         AtomicBoolean foundDiff = new AtomicBoolean(false);
                         List<OutputDTO> attributesList = new ArrayList<>();
                         getData(csvReader.lines(), attributesList, foundDiff);
-                        modelDTOS.add(new ModelDTO(modelName, attributesList, new Date(csv.getFile().lastModified())));
+                        modelDTOS.add(new ModelDTO(modelName, attributesList, new Date(csv.getURL().openConnection().getLastModified())));
                         if (foundDiff.get()) {
                             diffCount.incrementAndGet();
                         }
