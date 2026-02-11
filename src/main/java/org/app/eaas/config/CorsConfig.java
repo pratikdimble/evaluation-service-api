@@ -1,4 +1,4 @@
-package org.example.demo.config;
+package org.app.eaas.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

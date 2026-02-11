@@ -1,8 +1,8 @@
-package org.example.demo.service;
+package org.app.eaas.service;
 
-import org.example.demo.model.ResultDTO;
-import org.example.demo.model.OutputDTO;
-import org.example.demo.model.ModelDTO;
+import org.app.eaas.model.ResultDTO;
+import org.app.eaas.model.OutputDTO;
+import org.app.eaas.model.ModelDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;

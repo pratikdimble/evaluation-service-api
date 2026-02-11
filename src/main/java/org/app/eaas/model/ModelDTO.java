@@ -1,4 +1,4 @@
-package org.example.demo.model;
+package org.app.eaas.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package org.example.demo.config;
+package org.app.eaas.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;

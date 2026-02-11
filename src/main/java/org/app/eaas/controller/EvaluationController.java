@@ -1,10 +1,9 @@
-package org.example.demo.controller;
+package org.app.eaas.controller;
 
 import io.swagger.v3.oas.annotations.Parameter;
-import org.example.demo.model.ModelDTO;
-import org.example.demo.model.OutputDTO;
-import org.example.demo.model.ResultDTO;
-import org.example.demo.service.IEvaluationService;
+import org.app.eaas.model.OutputDTO;
+import org.app.eaas.model.ResultDTO;
+import org.app.eaas.service.IEvaluationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
