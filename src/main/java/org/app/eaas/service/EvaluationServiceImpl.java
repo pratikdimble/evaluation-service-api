@@ -13,6 +13,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -116,12 +119,59 @@ public class EvaluationServiceImpl implements IEvaluationService {
         AtomicInteger diffCount = new AtomicInteger(0);
 
         ClassPathResource manifest = new ClassPathResource(isBatch ? "batch.txt" : "online.txt");
+        List<String> resourcePaths;
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(manifest.getInputStream(), StandardCharsets.UTF_8))) {
-            List<String> resourcePaths = reader.lines().toList();
-//            String resolvedDir = dir.getFileName().toString();
+            resourcePaths = reader.lines().toList();
+        }
 
-            for (String resourcePath : resourcePaths) {
+        // Thread pool with fixed number of threads (tune size as needed)
+        ExecutorService executor = Executors.newFixedThreadPool(4);
+        List<Future<Void>> futures = new ArrayList<>();
+        for (String resourcePath : resourcePaths) {
+            futures.add(executor.submit(() -> {
+                ClassPathResource csv = new ClassPathResource(resourcePath);
+                String modelName = extractModelName(resourcePath);
+
+                if (csv.exists()) {
+                    try (BufferedReader csvReader = new BufferedReader(
+                            new InputStreamReader(csv.getInputStream(), StandardCharsets.UTF_8))) {
+
+                        AtomicBoolean foundDiff = new AtomicBoolean(false);
+                        List<OutputDTO> attributesList = new ArrayList<>();
+                        getData(csvReader.lines(), attributesList, foundDiff);
+
+                        Date modifiedDate = new Date(csv.getURL().openConnection().getLastModified());
+                        modelDTOS.add(new ModelDTO(modelName, attributesList, modifiedDate));
+
+                        if (foundDiff.get()) {
+                            diffCount.incrementAndGet();
+                        }
+                        processedCount.incrementAndGet();
+                    }
+                } else {
+                    System.out.println("File not found: " + csv);
+                }
+                return null;
+            }));
+        }
+        // Wait for all tasks to complete
+        for (Future<Void> future : futures) {
+            try {
+                future.get(); // blocks until task finishes
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        executor.shutdown();
+
+        System.out.println("\n\t\t Total directories processed: " + processedCount.get());
+        System.out.println("\t\t Directories with differences: " + diffCount.get());
+
+        return new ResultDTO((long) processedCount.get(), (long) diffCount.get(), modelDTOS);
+
+            /*for (String resourcePath : resourcePaths) {
                 ClassPathResource csv = new ClassPathResource(resourcePath);
                 String modelName = extractModelName(resourcePath);
                 ModelDTO modelDTO = new ModelDTO();
@@ -129,7 +179,6 @@ public class EvaluationServiceImpl implements IEvaluationService {
                 if (csv.exists()) {
                     try (BufferedReader csvReader = new BufferedReader(
                             new InputStreamReader(csv.getInputStream(), StandardCharsets.UTF_8))) {
-//                                    processCsv(csvReader.lines());
 
                         AtomicBoolean foundDiff = new AtomicBoolean(false);
                         List<OutputDTO> attributesList = new ArrayList<>();
@@ -144,11 +193,10 @@ public class EvaluationServiceImpl implements IEvaluationService {
                     System.out.println("File not found: " + csv);
                 }
             }
-        }
 
         System.out.println("\n\t\t Total directories processed: " + processedCount.get());
         System.out.println("\t\t Directories with differences: " + diffCount.get());
-        return new ResultDTO((long) processedCount.get(), (long) diffCount.get(), modelDTOS);
+        return new ResultDTO((long) processedCount.get(), (long) diffCount.get(), modelDTOS);*/
     }
 
     @Override
