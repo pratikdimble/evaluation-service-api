@@ -66,12 +66,14 @@ public class EvaluationServiceImpl implements IEvaluationService {
         Path basePath = resolveBasePath(isBatch, true);
         Path fixedRelative = resolveFixedPath(isBatch);
 
-        ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         List<Future<ModelDTO>> tasks = new ArrayList<>();
+
+        ExecutorService executor = createCsvProcessingExecutor(getDirCount(basePath));
 
         try (Stream<Path> dirs = Files.list(basePath)) {
             dirs.filter(Files::isDirectory)
                     .forEach(dir -> tasks.add(executor.submit(() -> processDirectory(dir, fixedRelative))));
+            printThreadLogs(executor);
         } catch (IOException e) {
             log.error("Error listing base directory {}", basePath, e);
         }
@@ -111,7 +113,8 @@ public class EvaluationServiceImpl implements IEvaluationService {
 
         List<String> resourcePaths = readManifest(isBatch);
 
-        ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+        ExecutorService executor = createCsvProcessingExecutor(resourcePaths.size());
+
         List<Future<Void>> tasks = new ArrayList<>();
 
         for (String resourcePath : resourcePaths) {
@@ -120,6 +123,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
                 return null;
             }));
         }
+        printThreadLogs(executor);
         waitForTasks(tasks, executor);
 
         log.info("Read {} resources, {} with diffs", processedCount.get(), diffCount.get());
@@ -244,6 +248,30 @@ public class EvaluationServiceImpl implements IEvaluationService {
        ===== Helper Methods ======
        ======================= */
 
+    private ExecutorService createCsvProcessingExecutor(int maxTasks) {
+        int cores = Runtime.getRuntime().availableProcessors();
+
+        // Core threads for CPU work, max threads higher for I/O waits
+        int maxPoolSize = cores * 2 + 1;
+        long keepAlive = 60L;
+
+        // Bounded queue prevents unbounded memory growth
+        BlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(Math.max(maxTasks, 100));
+
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                cores,
+                maxPoolSize,
+                keepAlive,
+                TimeUnit.SECONDS,
+                queue,
+                new ThreadPoolExecutor.CallerRunsPolicy() // slows down submission when saturated
+        );
+
+        executor.allowCoreThreadTimeOut(true); // let idle threads exit
+
+        return executor;
+    }
+
     private void parseCsv(Stream<String> lines, List<OutputDTO> outputs) {
         lines.skip(1)
                 .map(line -> line.split(","))
@@ -289,6 +317,24 @@ public class EvaluationServiceImpl implements IEvaluationService {
     private Path resolveFixedPath(boolean isBatch) {
         String fixed = isBatch ? batchFixed : onlineFixed;
         return Paths.get(fixed, subPath.split("/"));
+    }
+
+    private void printThreadLogs(ExecutorService executor){
+        ThreadPoolExecutor tpe = (ThreadPoolExecutor) executor;
+        log.info("Active: {} Queue: {} Completed: {}",
+                tpe.getActiveCount(),
+                tpe.getQueue().size(),
+                tpe.getCompletedTaskCount());
+    }
+
+    private int getDirCount(Path basePath){
+        Long dirCount = 0L;
+        try (Stream<Path> dirs = Files.list(basePath)) {
+            dirCount = dirs.filter(Files::isDirectory).count();
+        } catch (IOException e) {
+            log.error("Error listing base path {}", basePath, e);
+        }
+        return dirCount.intValue();
     }
 
     private String extractModelName(String csvPath) {
