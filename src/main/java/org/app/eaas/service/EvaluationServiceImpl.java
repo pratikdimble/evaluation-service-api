@@ -66,20 +66,41 @@ public class EvaluationServiceImpl implements IEvaluationService {
         Path basePath = resolveBasePath(isBatch, true);
         Path fixedRelative = resolveFixedPath(isBatch);
 
-        List<Future<ModelDTO>> tasks = new ArrayList<>();
-
         ExecutorService executor = createCsvProcessingExecutor(getDirCount(basePath));
+
+        List<CompletableFuture<ModelDTO>> futures = new ArrayList<>();
 
         try (Stream<Path> dirs = Files.list(basePath)) {
             dirs.filter(Files::isDirectory)
-                    .forEach(dir -> tasks.add(executor.submit(() -> processDirectory(dir, fixedRelative))));
-            printThreadLogs(executor);
+                    .forEach(dir -> {
+                        CompletableFuture<ModelDTO> future = CompletableFuture
+                                .supplyAsync(() -> processDirectory(dir, fixedRelative), executor)
+                                .exceptionally(ex -> {
+                                    log.error("Error processing " + dir + ": " + ex.getMessage(), ex);
+                                    return null; // return null on error
+                                });
+                        futures.add(future);
+                    });
         } catch (IOException e) {
             log.error("Error listing base directory {}", basePath, e);
         }
 
-        List<ModelDTO> models = collectResults(tasks);
-        executor.shutdown();
+        printThreadLogs(executor, true);
+
+        // Wait for all tasks to finish
+        CompletableFuture<Void> all = CompletableFuture
+                .allOf(futures.toArray(new CompletableFuture[0]));
+
+        // Block until all are done
+        all.join(); // safe because all tasks are known
+
+        printThreadLogs(executor, false);
+
+        // Collect results
+        List<ModelDTO> models = futures.stream()
+                .map(CompletableFuture::join) // already completed
+                .filter(Objects::nonNull)     // skip failed
+                .toList();
 
         long processed = models.size();
         long diffCount = models.stream().filter(m -> !m.getOutputDTOList().isEmpty()).count();
@@ -87,6 +108,7 @@ public class EvaluationServiceImpl implements IEvaluationService {
         log.info("Processed: {} directories, Differences found in {} directories", processed, diffCount);
         return new ResultDTO(processed, diffCount, models);
     }
+
 
     private ModelDTO processDirectory(Path dir, Path fixedPath) {
         Path csv = dir.resolve(fixedPath);
@@ -107,53 +129,64 @@ public class EvaluationServiceImpl implements IEvaluationService {
 
     @Override
     public ResultDTO readResourcesCSVs(Boolean isBatch) throws IOException {
-        List<ModelDTO> models = new Vector<>();
-        AtomicInteger processedCount = new AtomicInteger();
-        AtomicInteger diffCount = new AtomicInteger();
-
         List<String> resourcePaths = readManifest(isBatch);
 
-        ExecutorService executor = createCsvProcessingExecutor(resourcePaths.size());
+        // Shared thread pool for all parallel loading tasks
+        ExecutorService customExecutor = createCsvProcessingExecutor(resourcePaths.size());
 
-        List<Future<Void>> tasks = new ArrayList<>();
+        // Create a list of CompletableFutures for each resource
+        List<CompletableFuture<ModelDTO>> futures = new ArrayList<>();
 
         for (String resourcePath : resourcePaths) {
-            tasks.add(executor.submit(() -> {
-                loadClassPathCsv(resourcePath, models, processedCount, diffCount);
-                return null;
-            }));
+            CompletableFuture<ModelDTO> future = CompletableFuture
+                    .supplyAsync(() -> {
+                        try {
+                            // perform resource loading
+                            return loadAndReturnModel(resourcePath);
+                        } catch (Exception ex) {
+                            log.error("Error loading resource {}: {}", resourcePath, ex.getMessage(), ex);
+                            return null;
+                        }
+                    }, customExecutor);
+
+            futures.add(future);
         }
-        printThreadLogs(executor);
-        waitForTasks(tasks, executor);
+        //  Log before completion
+        printThreadLogs(customExecutor, true);
 
-        log.info("Read {} resources, {} with diffs", processedCount.get(), diffCount.get());
-        return new ResultDTO((long)processedCount.get(), (long)diffCount.get(), models);
-    }
+        // Wait until all tasks complete
+        CompletableFuture<Void> all = CompletableFuture
+                .allOf(futures.toArray(new CompletableFuture[0]));
 
-    private void loadClassPathCsv(String resourcePath,
-                                  List<ModelDTO> models,
-                                  AtomicInteger processedCount,
-                                  AtomicInteger diffCount) {
-        try (InputStream is = new ClassPathResource(resourcePath).getInputStream();
-             BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+        // Block here until all are done
+        all.join();
 
-            List<OutputDTO> outputs = new ArrayList<>();
-            parseCsv(reader.lines(), outputs);
+        // Log before completion
+        printThreadLogs(customExecutor, false);
 
-            String modelName = extractModelName(resourcePath);
-            models.add(new ModelDTO(modelName, outputs, new Date()));
-            processedCount.incrementAndGet();
-            if (!outputs.isEmpty()) {
-                diffCount.incrementAndGet();
-            }
+        // Collect results, skipping any nulls from failed tasks
+        List<ModelDTO> models = futures.stream()
+                .map(CompletableFuture::join)  // already completed
+                .filter(Objects::nonNull)
+                .toList();
 
-        } catch (IOException e) {
-            log.error("Resource {} not found", resourcePath, e);
-        }
+        // Shutdown executor
+        customExecutor.shutdown();
+        shutdownExecutor(customExecutor);
+
+        long processedCount = models.size();
+        long diffCount = models.stream().filter(m -> !m.getOutputDTOList().isEmpty()).count();
+
+        log.info("Read {} resources, {} with diffs", processedCount, diffCount);
+        return new ResultDTO(processedCount, diffCount, models);
     }
 
     private List<String> readManifest(Boolean isBatch) throws IOException {
         ClassPathResource manifest = new ClassPathResource(isBatch ? "batch.txt" : "online.txt");
+        if (!manifest.exists()) {
+            log.warn("Manifest not found: {}", manifest);
+            return Collections.emptyList();
+        }
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(manifest.getInputStream(), StandardCharsets.UTF_8))) {
             return reader.lines().collect(Collectors.toList());
         }
@@ -205,20 +238,6 @@ public class EvaluationServiceImpl implements IEvaluationService {
     }
 
     @Override
-    public String exportDetailCsv(String model, Boolean isBatch) {
-        List<OutputDTO> outputs = fetchModelDetail(model, isBatch);
-        if (outputs.isEmpty()) {
-            return "No data found for model: " + model;
-        }
-        try {
-            writeCsv(Collections.singletonList(new ModelDTO(model, outputs, new Date())), model, true);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return "Detail CSV exported for " + model;
-    }
-
-    @Override
     public String generateCsvString(String model, Boolean isBatch) throws IOException {
         List<ModelDTO> models = new ArrayList<>();
         if(model == null)
@@ -264,7 +283,14 @@ public class EvaluationServiceImpl implements IEvaluationService {
                 keepAlive,
                 TimeUnit.SECONDS,
                 queue,
-                new ThreadPoolExecutor.CallerRunsPolicy() // slows down submission when saturated
+                new ThreadPoolExecutor.CallerRunsPolicy() {
+                    @Override
+                    public void rejectedExecution(Runnable r, ThreadPoolExecutor ex) {
+                        log.warn("Task rejected — queue is full (size={}), executor busy (active={})",
+                                ex.getQueue().size(), ex.getActiveCount());
+                        super.rejectedExecution(r, ex); // run in caller thread
+                    }
+                }
         );
 
         executor.allowCoreThreadTimeOut(true); // let idle threads exit
@@ -319,12 +345,13 @@ public class EvaluationServiceImpl implements IEvaluationService {
         return Paths.get(fixed, subPath.split("/"));
     }
 
-    private void printThreadLogs(ExecutorService executor){
+    private void printThreadLogs(ExecutorService executor, boolean isSubmit){
         ThreadPoolExecutor tpe = (ThreadPoolExecutor) executor;
-        log.info("Active: {} Queue: {} Completed: {}",
-                tpe.getActiveCount(),
-                tpe.getQueue().size(),
-                tpe.getCompletedTaskCount());
+        String msg = isSubmit
+                ? "readMultipleCSVs – After submit → Active: {} Queue: {} Completed: {}"
+                : "readMultipleCSVs – After completion → Active: {} Queue: {} Completed: {}";
+
+        log.info(msg, tpe.getActiveCount(), tpe.getQueue().size(), tpe.getCompletedTaskCount());
     }
 
     private int getDirCount(Path basePath){
@@ -352,24 +379,47 @@ public class EvaluationServiceImpl implements IEvaluationService {
         return null; // not found
     }
 
-    private <T> List<T> collectResults(List<Future<T>> futures) {
-        List<T> results = new ArrayList<>();
-        for (Future<T> f : futures) {
-            try {
-                T r = f.get();
-                if (r != null) results.add(r);
-            } catch (InterruptedException | ExecutionException e) {
-                log.error("Error collecting future", e);
+    private void shutdownExecutor(ExecutorService executor){
+        try {
+            // Wait for up to 60 seconds for tasks to finish
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                log.warn("Executor did not terminate in time, forcing shutdown");
+                executor.shutdownNow(); // force shutdown
+                if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+                    log.error("Executor still did not terminate after forced shutdown");
+                }
             }
+        } catch (InterruptedException ie) {
+            log.error("Interrupted during executor termination", ie);
+            executor.shutdownNow(); // cancel tasks
+            Thread.currentThread().interrupt(); // preserve interrupt
         }
-        return results;
+
     }
 
-    private void waitForTasks(List<Future<Void>> futures, ExecutorService executor) {
-        futures.forEach(f -> {
-            try { f.get(); }
-            catch (InterruptedException | ExecutionException e) { log.error("Error", e); }
-        });
-        executor.shutdown();
+    /**
+     * Loads a CSV resource from the classpath and returns a ModelDTO
+     * (or null if there was a problem).
+     */
+    private ModelDTO loadAndReturnModel(String resourcePath) {
+        List<OutputDTO> outputs = new ArrayList<>();
+        try (InputStream is = new ClassPathResource(resourcePath).getInputStream();
+             BufferedReader reader = new BufferedReader(
+                     new InputStreamReader(is, StandardCharsets.UTF_8))) {
+
+            // Parse the CSV into output DTOs
+            parseCsv(reader.lines(), outputs);
+
+            // Extract the model name from the resource path
+            String modelName = extractModelName(resourcePath);
+
+            // Build and return the DTO
+            return new ModelDTO(modelName, outputs, new Date());
+
+        } catch (IOException ex) {
+            log.error("Failed to load resource CSV: {}", resourcePath, ex);
+            return null; // skip this resource if there was an error
+        }
     }
+
 }
