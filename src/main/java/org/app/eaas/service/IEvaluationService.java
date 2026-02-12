@@ -20,10 +20,8 @@ public interface IEvaluationService {
 
     List<OutputDTO> fetchModelDetail(String model, Boolean isBatch);
 
-//    void exportModelCsv(Boolean isBatch) throws IOException;
-
     String  exportDetailCsv(String model, Boolean isBatch);
 
-//    ResultDTO readResourcesCSVsMCP(Boolean isBatch) throws IOException;
+    String generateCsvString(String model, Boolean isBatch) throws IOException;
 
 }

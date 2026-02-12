@@ -26,7 +26,7 @@ public class EvaluationController {
             description = "Evaluates CSVs from online/batch resources. " +
             "Set isBatch=true for Batch mode, false for Online mode.")
     @GetMapping()
-    public ResponseEntity<ResultDTO> evaluateOnlineCSVs(@RequestParam(defaultValue = "false") boolean isBatch) throws IOException {
+    public ResponseEntity<ResultDTO> evaluateCSVs(@RequestParam(defaultValue = "false") boolean isBatch) throws IOException {
         return ResponseEntity.ok(evaluationService.readResourcesCSVs(isBatch));
     }
 
@@ -62,37 +62,4 @@ public class EvaluationController {
         List<OutputDTO> details = evaluationService.fetchModelDetail(model, isBatch);
         return ResponseEntity.ok(details);
     }
-
-    @Operation(
-            summary = "Export all models summary CSV",
-            description = "Exports evaluation results for all models into a summary CSV file. " +
-                    "Set isBatch=true for Batch mode, false for Online mode."
-    )
-    @GetMapping("/export")
-    public ResponseEntity<String> exportModelCsv(
-            @Parameter(description = "Set true for Batch mode, false for Online mode")
-            @RequestParam(defaultValue = "false") boolean isBatch) throws IOException {
-
-        evaluationService.exportCsv(isBatch);
-        return ResponseEntity.ok("Model summary CSV export triggered for " +
-                (isBatch ? "Batch" : "Online") + " mode.");
-    }
-
-    @Operation(
-            summary = "Export detail CSV for a specific model",
-            description = "Exports detailed evaluation results for a given model into a CSV file. " +
-                    "Provide the model name as a path variable and set isBatch accordingly."
-    )
-    @GetMapping("/export/{model}")
-    public ResponseEntity<String> exportDetailCsv(
-            @Parameter(description = "Model directory name, e.g. APRI03")
-            @PathVariable String model,
-
-            @Parameter(description = "Set true for Batch mode, false for Online mode")
-            @RequestParam(defaultValue = "false") boolean isBatch) {
-
-
-        return ResponseEntity.ok(evaluationService.exportDetailCsv(model, isBatch));
-    }
-
 }

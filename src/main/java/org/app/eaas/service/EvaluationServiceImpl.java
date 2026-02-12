@@ -214,6 +214,32 @@ public class EvaluationServiceImpl implements IEvaluationService {
         return "Detail CSV exported for " + model;
     }
 
+    @Override
+    public String generateCsvString(String model, Boolean isBatch) throws IOException {
+        List<ModelDTO> models = new ArrayList<>();
+        if(model == null)
+            models = readResourcesCSVs(isBatch).getModelDTOs();
+        else{
+            List<OutputDTO> outputs = fetchModelDetail(model, isBatch);
+            models.add(new ModelDTO(model, outputs, new Date()));
+            }
+        StringBuilder sb = new StringBuilder();
+        sb.append("Model,InputA,InputA Records,InputB,InputB Records,Attributes With Differences\n");
+
+        for (ModelDTO m : models) {
+            for (OutputDTO o : m.getOutputDTOList()) {
+                sb.append(m.getModel()).append(",")
+                        .append(o.getInputA()).append(",")
+                        .append(o.getInputARecords()).append(",")
+                        .append(o.getInputB()).append(",")
+                        .append(o.getInputBRecords()).append(",")
+                        .append(o.getAttributesWithDifferences()).append("\n");
+            }
+        }
+        return sb.toString();
+    }
+
+
     /* =======================
        ===== Helper Methods ======
        ======================= */
