@@ -1,350 +1,263 @@
 package org.app.eaas.service;
 
-import org.app.eaas.model.ResultDTO;
-import org.app.eaas.model.OutputDTO;
-import org.app.eaas.model.ModelDTO;
+import org.app.eaas.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
 public class EvaluationServiceImpl implements IEvaluationService {
 
+    private static final Logger log = LoggerFactory.getLogger(EvaluationServiceImpl.class);
+
     @Value("${csv.base.online}")
     private String onlineBase;
+
     @Value("${csv.base.batch}")
     private String batchBase;
+
     @Value("${csv.fixed.online}")
     private String onlineFixed;
+
     @Value("${csv.fixed.batch}")
     private String batchFixed;
+
     @Value("${csv.subpath}")
     private String subPath;
+
+    @Value("${csv.prefix.online}")
+    private String onlinePrefix;
+
+    @Value("${csv.prefix.batch}")
+    private String batchPrefix;
+
+    private static final int THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
 
     @Override
     public String readCSV() {
         Path path = Path.of("D:\\testplan_dev\\report\\comparison_summary.csv");
-        System.out.println("\n\n\t\t*********** Differences found for below Comparision model  ****************** ");
+        log.info("Reading CSV differences from {}", path);
+
         try (Stream<String> lines = Files.lines(path)) {
-            lines.skip(1) // skip header row
-                    .map(line -> line.split(",")) // split by comma
-                    .filter(parts -> Integer.parseInt(parts[parts.length - 1]) > 0) // only rows with differences > 0
-                    .forEach(parts -> System.out.println("\t\t" + parts[1] + " | " + parts[4] + " | " + parts[parts.length-1])); // print InputA and InputB with Attributes with Differences
+            lines.skip(1)
+                    .map(line -> line.split(","))
+                    .filter(parts -> safeParseInt(parts[parts.length - 1]) > 0)
+                    .forEach(parts -> log.info("Model: {} | {} | {}", parts[1], parts[4], parts[parts.length - 1]));
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error reading CSV", e);
         }
-        System.out.println("\t\t************ EOF *********** EOF  ************ EOF ************** EOF ******* \n");
 
         return "OK";
     }
 
     @Override
-    public List<ModelDTO>  readMultipleCSVs() {
-        AtomicInteger processedCount = new AtomicInteger(0);
-        AtomicInteger diffCount = new AtomicInteger(0);
-        List<ModelDTO> modelDTOS = new ArrayList<>();
-        // Base path where subdirectories exist
-        Path basePath = Path.of("D:\\Online");
+    public ResultDTO readMultipleCSVs(Boolean isBatch) {
+        Path basePath = resolveBasePath(isBatch, true);
+        Path fixedRelative = resolveFixedPath(isBatch);
 
-        // Fixed relative path after each subdirectory
-        String fixedPath = "GCP_vsOnPrem\\testplan_dev\\report\\comparison_summary.csv";
-//        System.out.println("\n\n\t\t*********** Differences found for below Comparision model  ****************** ");
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+        List<Future<ModelDTO>> tasks = new ArrayList<>();
+
         try (Stream<Path> dirs = Files.list(basePath)) {
-            dirs.filter(Files::isDirectory) //
-                    .forEach(dir -> {
-                        Path csvPath = dir.resolve(fixedPath); // build full path
-                        if (Files.exists(csvPath)) {
-                            String resolvedDir = dir.getFileName().toString();
-//                            System.out.println("Processing Model: " + resolvedDir);
-                            AtomicBoolean foundDiff = new AtomicBoolean(false);
-                            List<OutputDTO> attributesList = new ArrayList<>();
-
-                            try (Stream<String> lines = Files.lines(csvPath)) {
-                                ModelDTO modelDTO = new ModelDTO();
-                                modelDTO.setModel(resolvedDir);
-                                lines.skip(1) // skip header
-                                        .map(line -> line.split(","))
-                                        .filter(parts -> {
-                                            int inputARecords = Integer.parseInt(parts[3]);
-                                            int inputBRecords = Integer.parseInt(parts[6]);
-                                            int differences = Integer.parseInt(parts[parts.length - 1]);
-                                            return inputARecords != inputBRecords || differences > 0;
-                                        })
-                                        //  .filter(parts -> Integer.parseInt(parts[parts.length - 1]) > 0)
-                                        .forEach(parts -> {
-                                            attributesList.add(new OutputDTO(parts[1], Long.valueOf(parts[3]), parts[4],Long.valueOf(parts[6]), Long.valueOf(parts[parts.length - 1])));
-                                            foundDiff.set(true);
-//                                            System.out.println("\t\tInputA: " + parts[1] + " | InputB: " + parts[4] + "\n");
-                                        });
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            if (!attributesList.isEmpty()) {
-                                modelDTOS.add(new ModelDTO(resolvedDir, attributesList, null));
-                            }
-                            if (foundDiff.get()) {
-                                diffCount.incrementAndGet();
-                            }
-                            processedCount.incrementAndGet();
-                        } else {
-                            System.out.println("File not found: " + csvPath);
-                        }
-                    });
+            dirs.filter(Files::isDirectory)
+                    .forEach(dir -> tasks.add(executor.submit(() -> processDirectory(dir, fixedRelative))));
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error listing base directory {}", basePath, e);
         }
-        /*System.out.println("\n\t\t************ EOF *********** EOF  ************ EOF ************** EOF ******* \n");
-        System.out.println("\nTotal directories processed: " + processedCount.get());
-        System.out.println("Directories with differences: " + diffCount.get());*/
-        return modelDTOS;
+
+        List<ModelDTO> models = collectResults(tasks);
+        executor.shutdown();
+
+        long processed = models.size();
+        long diffCount = models.stream().filter(m -> !m.getOutputDTOList().isEmpty()).count();
+
+        log.info("Processed: {} directories, Differences found in {} directories", processed, diffCount);
+        return new ResultDTO(processed, diffCount, models);
+    }
+
+    private ModelDTO processDirectory(Path dir, Path fixedPath) {
+        Path csv = dir.resolve(fixedPath);
+        if (!Files.exists(csv)) {
+            log.warn("CSV not found in {}", dir);
+            return null;
+        }
+
+        List<OutputDTO> outputs = new ArrayList<>();
+        try (Stream<String> lines = Files.lines(csv)) {
+            parseCsv(lines, outputs);
+        } catch (IOException e) {
+            log.error("Error reading CSV {}", csv, e);
+        }
+
+        return new ModelDTO(dir.getFileName().toString(), outputs, new Date(csv.toFile().lastModified()));
     }
 
     @Override
     public ResultDTO readResourcesCSVs(Boolean isBatch) throws IOException {
-        List<ModelDTO> modelDTOS = new ArrayList<>();
-        AtomicInteger processedCount = new AtomicInteger(0);
-        AtomicInteger diffCount = new AtomicInteger(0);
+        List<ModelDTO> models = new Vector<>();
+        AtomicInteger processedCount = new AtomicInteger();
+        AtomicInteger diffCount = new AtomicInteger();
 
-        ClassPathResource manifest = new ClassPathResource(isBatch ? "batch.txt" : "online.txt");
-        List<String> resourcePaths;
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(manifest.getInputStream(), StandardCharsets.UTF_8))) {
-            resourcePaths = reader.lines().toList();
-        }
+        List<String> resourcePaths = readManifest(isBatch);
 
-        // Thread pool with fixed number of threads (tune size as needed)
-        ExecutorService executor = Executors.newFixedThreadPool(4);
-        List<Future<Void>> futures = new ArrayList<>();
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+        List<Future<Void>> tasks = new ArrayList<>();
+
         for (String resourcePath : resourcePaths) {
-            futures.add(executor.submit(() -> {
-                ClassPathResource csv = new ClassPathResource(resourcePath);
-                String modelName = extractModelName(resourcePath);
-
-                if (csv.exists()) {
-                    try (BufferedReader csvReader = new BufferedReader(
-                            new InputStreamReader(csv.getInputStream(), StandardCharsets.UTF_8))) {
-
-                        AtomicBoolean foundDiff = new AtomicBoolean(false);
-                        List<OutputDTO> attributesList = new ArrayList<>();
-                        getData(csvReader.lines(), attributesList, foundDiff);
-
-                        Date modifiedDate = new Date(csv.getURL().openConnection().getLastModified());
-                        modelDTOS.add(new ModelDTO(modelName, attributesList, modifiedDate));
-
-                        if (foundDiff.get()) {
-                            diffCount.incrementAndGet();
-                        }
-                        processedCount.incrementAndGet();
-                    }
-                } else {
-                    System.out.println("File not found: " + csv);
-                }
+            tasks.add(executor.submit(() -> {
+                loadClassPathCsv(resourcePath, models, processedCount, diffCount);
                 return null;
             }));
         }
-        // Wait for all tasks to complete
-        for (Future<Void> future : futures) {
-            try {
-                future.get(); // blocks until task finishes
-            } catch (Exception e) {
-                e.printStackTrace();
+        waitForTasks(tasks, executor);
+
+        log.info("Read {} resources, {} with diffs", processedCount.get(), diffCount.get());
+        return new ResultDTO((long)processedCount.get(), (long)diffCount.get(), models);
+    }
+
+    private void loadClassPathCsv(String resourcePath,
+                                  List<ModelDTO> models,
+                                  AtomicInteger processedCount,
+                                  AtomicInteger diffCount) {
+        try (InputStream is = new ClassPathResource(resourcePath).getInputStream();
+             BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+
+            List<OutputDTO> outputs = new ArrayList<>();
+            parseCsv(reader.lines(), outputs);
+
+            String modelName = extractModelName(resourcePath);
+            models.add(new ModelDTO(modelName, outputs, new Date()));
+            processedCount.incrementAndGet();
+            if (!outputs.isEmpty()) {
+                diffCount.incrementAndGet();
             }
+
+        } catch (IOException e) {
+            log.error("Resource {} not found", resourcePath, e);
         }
+    }
 
-        executor.shutdown();
-
-        System.out.println("\n\t\t Total directories processed: " + processedCount.get());
-        System.out.println("\t\t Directories with differences: " + diffCount.get());
-
-        return new ResultDTO((long) processedCount.get(), (long) diffCount.get(), modelDTOS);
-
-            /*for (String resourcePath : resourcePaths) {
-                ClassPathResource csv = new ClassPathResource(resourcePath);
-                String modelName = extractModelName(resourcePath);
-                ModelDTO modelDTO = new ModelDTO();
-                modelDTO.setModel(modelName);
-                if (csv.exists()) {
-                    try (BufferedReader csvReader = new BufferedReader(
-                            new InputStreamReader(csv.getInputStream(), StandardCharsets.UTF_8))) {
-
-                        AtomicBoolean foundDiff = new AtomicBoolean(false);
-                        List<OutputDTO> attributesList = new ArrayList<>();
-                        getData(csvReader.lines(), attributesList, foundDiff);
-                        modelDTOS.add(new ModelDTO(modelName, attributesList, new Date(csv.getURL().openConnection().getLastModified())));
-                        if (foundDiff.get()) {
-                            diffCount.incrementAndGet();
-                        }
-                        processedCount.incrementAndGet();
-                    }
-                } else {
-                    System.out.println("File not found: " + csv);
-                }
-            }
-
-        System.out.println("\n\t\t Total directories processed: " + processedCount.get());
-        System.out.println("\t\t Directories with differences: " + diffCount.get());
-        return new ResultDTO((long) processedCount.get(), (long) diffCount.get(), modelDTOS);*/
+    private List<String> readManifest(Boolean isBatch) throws IOException {
+        ClassPathResource manifest = new ClassPathResource(isBatch ? "batch.txt" : "online.txt");
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(manifest.getInputStream(), StandardCharsets.UTF_8))) {
+            return reader.lines().collect(Collectors.toList());
+        }
     }
 
     @Override
     public void exportCsv(Boolean isBatch) throws IOException {
-        ResultDTO  resultDTO = this.readResourcesCSVs(isBatch);
-        if(resultDTO != null){
-            if(!resultDTO.getModelDTOs().isEmpty()){
-                List<ModelDTO> modelDTOs = new ArrayList<>(resultDTO.getModelDTOs());
-                // Export to CSV
-                String[] header = {"Model", "InputA", "InputA Records", "InputB", "InputB Records", "Attributes With Differences"};
-                try (FileWriter writer = new FileWriter("result_summary"+(isBatch ? "_batch" : "_online")+".csv")) {
-                    // Write header
-                    writer.append(String.join(",", header)).append("\n");
+        ResultDTO result = readResourcesCSVs(isBatch);
+        writeCsv(result.getModelDTOs(), isBatch ? "batch" : "online", false);
+    }
 
-                    // Write rows
-                    for (ModelDTO model : modelDTOs) {
-                        for (OutputDTO dto : model.getOutputDTOList()) {
-                            writer.append(model.getModel()).append(",")
-                                    .append(String.valueOf(dto.getInputA())).append(",")
-                                    .append(String.valueOf(dto.getInputARecords())).append(",")
-                                    .append(String.valueOf(dto.getInputB())).append(",")
-                                    .append(String.valueOf(dto.getInputBRecords())).append(",")
-                                    .append(String.valueOf(dto.getAttributesWithDifferences()))
-                                    .append("\n");
-                        }
-                    }
-                    System.out.println("CSV file created: "+"result_summary"+(isBatch ? "_batch" : "_online")+".csv");
-                } catch (IOException e) {
-                    e.printStackTrace();
+    private void writeCsv(List<ModelDTO> models, String type, boolean detail) throws IOException {
+        String filename = detail
+                ? type + "_detail_summary.csv"
+                : type + "_summary.csv";
+
+        log.info("Exporting CSV to {}", filename);
+
+        try (BufferedWriter writer = Files.newBufferedWriter(Path.of(filename))) {
+            writer.write("Model,InputA,InputA Records,InputB,InputB Records,Attributes With Differences");
+            writer.newLine();
+
+            for (ModelDTO m : models) {
+                for (OutputDTO o : m.getOutputDTOList()) {
+                    writer.write(String.join(",",
+                            m.getModel(),
+                            o.getInputA(),
+                            String.valueOf(o.getInputARecords()),
+                            o.getInputB(),
+                            String.valueOf(o.getInputBRecords()),
+                            String.valueOf(o.getAttributesWithDifferences())));
+                    writer.newLine();
                 }
             }
-
         }
     }
 
     @Override
     public List<OutputDTO> fetchModelDetail(String model, Boolean isBatch) {
-        List<OutputDTO> outputDTOS = new ArrayList<>();
-        AtomicBoolean foundDiff = new AtomicBoolean(false);
-
-        ClassPathResource manifest = new ClassPathResource(isBatch ? "batch.txt" : "online.txt");
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(manifest.getInputStream(), StandardCharsets.UTF_8))) {
-            List<String> resourcePaths = reader.lines().toList();
-            Optional<String> pathOpt = resourcePaths.stream()
-                    .filter(p -> p.contains("/" + model + "/"))
-                    .findFirst();
-
-            if (pathOpt.isPresent()) {
-                String resourcePath = pathOpt.get(); // e.g. Batch/abc04/testplan_dev/report/comparison_summary.csv
-                ClassPathResource csv = new ClassPathResource(resourcePath);
-                try (BufferedReader csvReader = new BufferedReader(
-                        new InputStreamReader(csv.getInputStream(), StandardCharsets.UTF_8))) {
-                    getData(csvReader.lines(), outputDTOS, foundDiff);
-                }
-            } else {
-                System.out.println("No path found for model: " + model);
-            }
+        try {
+            return readResourcesCSVs(isBatch).getModelDTOs().stream()
+                    .filter(m -> model.equals(m.getModel()))
+                    .map(ModelDTO::getOutputDTOList)
+                    .findFirst()
+                    .orElse(Collections.emptyList());
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }
-
-        /*// Base path (Batch or Online) — you can decide which one to use or pass as parameter
-        Path basePath = this.resolveBasePath(isBatch); // false = Online, true = Batch
-
-        // Fixed relative path after each subdirectory
-        Path fixedPath = this.resolveFixedPath(isBatch);
-        // Build full path to the CSV for the given model
-        Path modelDir = basePath.resolve(model);
-        Path csvPath = modelDir.resolve(fixedPath);
-
-        if (!Files.exists(csvPath)) {
-            System.out.println("File not found: " + csvPath);
-            return outputDTOS; // empty list
-        }
-
-        try (Stream<String> lines = Files.lines(csvPath)) {
-            getData(lines, outputDTOS, foundDiff);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
-
-        return outputDTOS;
-    }
-
-    @Override
-    public void exportModelCsv(Boolean isBatch) throws IOException {
-        ResultDTO  resultDTO = this.readResourcesCSVs(isBatch);
-        if(resultDTO != null){
-            if(!resultDTO.getModelDTOs().isEmpty()){
-                List<ModelDTO> modelDTOs = new ArrayList<>(resultDTO.getModelDTOs());
-                // Export to CSV
-                String[] header = {"Model"};
-                try (FileWriter writer = new FileWriter("model_summary"+(isBatch ? "_batch" : "_online")+".csv")) {
-                    // Write header
-                    writer.append(String.join(",", header)).append("\n");
-
-                    // Write rows
-                    for (ModelDTO model : modelDTOs) {
-                        for (OutputDTO dto : model.getOutputDTOList()) {
-                            writer.append(model.getModel()).append(",")
-                                    .append("\n");
-                        }
-                    }
-                    System.out.println("CSV file created: "+"model_summary"+(isBatch ? "_batch" : "_online")+".csv");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 
     @Override
     public String exportDetailCsv(String model, Boolean isBatch) {
-        List<OutputDTO>  outputDTOs = this.fetchModelDetail(model, isBatch);
-        if(!outputDTOs.isEmpty()){
-            // Export to CSV
-            String[] header = {"Model", "InputA", "InputA Records", "InputB", "InputB Records", "Attributes With Differences"};
-            try (FileWriter writer = new FileWriter(model+"_detail_summary"+(isBatch ? "_batch" : "_online")+".csv")) {
-                // Write header
-                writer.append(String.join(",", header)).append("\n");
-
-            // Write rows
-                for (OutputDTO dto : outputDTOs) {
-                    writer.append(model).append(",")
-                            .append(String.valueOf(dto.getInputA())).append(",")
-                            .append(String.valueOf(dto.getInputARecords())).append(",")
-                            .append(String.valueOf(dto.getInputB())).append(",")
-                            .append(String.valueOf(dto.getInputBRecords())).append(",")
-                            .append(String.valueOf(dto.getAttributesWithDifferences()))
-                            .append("\n");
-                }
-                System.out.println("CSV file created: "+model+"_detail_summary"+(isBatch ? "_batch" : "_online")+".csv");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return "Detail CSV export triggered for model " + model + " in " + (isBatch ? "Batch" : "Online") + " mode.";
-
-        }else
-            return "No path found for model: " + model + " in " + (isBatch ? "Batch" : "Online") + " mode.";
+        List<OutputDTO> outputs = fetchModelDetail(model, isBatch);
+        if (outputs.isEmpty()) {
+            return "No data found for model: " + model;
+        }
+        try {
+            writeCsv(Collections.singletonList(new ModelDTO(model, outputs, new Date())), model, true);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return "Detail CSV exported for " + model;
     }
 
-    /*********************************
-     * HELPER METHODS STARTS FROM HERE
-     * *******************************/
-    private Path resolveBasePath(boolean isBatch) {
-        String base = isBatch ? batchBase : onlineBase;
-        return Path.of(base);
+    /* =======================
+       ===== Helper Methods ======
+       ======================= */
+
+    private void parseCsv(Stream<String> lines, List<OutputDTO> outputs) {
+        lines.skip(1)
+                .map(line -> line.split(","))
+                .filter(this::hasDifference)
+                .map(parts -> new OutputDTO(
+                        parts[1],
+                        safeParseLong(parts[3]),
+                        parts[4],
+                        safeParseLong(parts[6]),
+                        safeParseLong(parts[parts.length - 1])
+                ))
+                .forEach(outputs::add);
+    }
+
+    private boolean hasDifference(String[] parts) {
+        return safeParseLong(parts[3]) != safeParseLong(parts[6])
+                || safeParseLong(parts[parts.length - 1]) > 0;
+    }
+
+    private int safeParseInt(String s) {
+        try { return Integer.parseInt(s.trim()); }
+        catch (NumberFormatException e) {
+            log.warn("Invalid integer format: {}", s);
+            return 0;
+        }
+    }
+
+    private long safeParseLong(String s) {
+        try { return Long.parseLong(s.trim()); }
+        catch (NumberFormatException e) {
+            log.warn("Invalid long format: {}", s);
+            return 0L;
+        }
+    }
+
+    private Path resolveBasePath(boolean isBatch, boolean isInternal) {
+        String base = isBatch
+                ? (isInternal ? batchPrefix : batchBase)
+                : (isInternal ? onlinePrefix : onlineBase);
+        return Paths.get(base);
     }
 
     private Path resolveFixedPath(boolean isBatch) {
@@ -352,69 +265,39 @@ public class EvaluationServiceImpl implements IEvaluationService {
         return Paths.get(fixed, subPath.split("/"));
     }
 
-    private void getData(Stream<String> lines, List<OutputDTO> attributesList, AtomicBoolean foundDiff){
-        Iterator<String> iterator = lines.iterator();
-        if (!iterator.hasNext()) {
-            return; // empty file
-        }
+    private String extractModelName(String csvPath) {
+        // Normalize separators
+        String[] parts = csvPath.split("/");
 
-        // Read header row
-        String headerLine = iterator.next();
-        String[] headers = headerLine.split(",");
-        Map<String, Integer> headerIndex = new HashMap<>();
-        for (int i = 0; i < headers.length; i++) {
-            headerIndex.put(headers[i].trim(), i);
-        }
-
-        // Now process remaining lines
-        while (iterator.hasNext()) {
-            String line = iterator.next();
-            String[] parts = line.split(",");
-            int inputARecords = Integer.parseInt(parts[headerIndex.get("InputA Records")]);
-            int inputBRecords = Integer.parseInt(parts[headerIndex.get("InputB Records")]);
-            int differences   = Integer.parseInt(parts[headerIndex.get("Attributes with Differences")]);
-
-            if (inputARecords != inputBRecords || differences > 0) {
-                attributesList.add(new OutputDTO(
-                        parts[headerIndex.get("InputA")],
-                        Long.valueOf(parts[headerIndex.get("InputA Records")]),
-                        parts[headerIndex.get("InputB")],
-                        Long.valueOf(parts[headerIndex.get("InputB Records")]),
-                        Long.valueOf(parts[headerIndex.get("Attributes with Differences")])
-                ));
-                foundDiff.set(true);
-            }
-        }
-    }
-
-    private String extractModelName(String resourcePath) {
-        String[] parts = resourcePath.split("/");
         for (int i = 0; i < parts.length; i++) {
-            if ("Online".equals(parts[i]) || "Batch".equals(parts[i])) {
-                return parts[i + 1]; // e.g. JANU03
+            if ("GCP_Online".equals(parts[i]) || "GCP_vsOnPrem".equals(parts[i])) {
+                // Model name is the segment just before this
+                if (i > 0) {
+                    return parts[i - 1];
+                }
             }
         }
-        return null;
+        return null; // not found
     }
 
-    @Deprecated
-    private void getData1(Stream<String> lines, List<OutputDTO> attributesList, AtomicBoolean foundDiff){
-        lines.skip(1) // skip header
-                .map(line -> line.split(","))
-                .filter(parts -> {
-                    int inputARecords = Integer.parseInt(parts[3]);
-                    int inputBRecords = Integer.parseInt(parts[6]);
-                    int differences = Integer.parseInt(parts[parts.length - 1]);
-                    return inputARecords != inputBRecords || differences > 0;
-                })
-                .forEach(parts -> {
-                    attributesList.add(new OutputDTO(parts[1],
-                            Long.valueOf(parts[3]), parts[4],
-                            Long.valueOf(parts[6]),
-                            Long.valueOf(parts[parts.length - 1]))
-                    );
-                    foundDiff.set(true);
-                });
+    private <T> List<T> collectResults(List<Future<T>> futures) {
+        List<T> results = new ArrayList<>();
+        for (Future<T> f : futures) {
+            try {
+                T r = f.get();
+                if (r != null) results.add(r);
+            } catch (InterruptedException | ExecutionException e) {
+                log.error("Error collecting future", e);
+            }
+        }
+        return results;
     }
 
+    private void waitForTasks(List<Future<Void>> futures, ExecutorService executor) {
+        futures.forEach(f -> {
+            try { f.get(); }
+            catch (InterruptedException | ExecutionException e) { log.error("Error", e); }
+        });
+        executor.shutdown();
+    }
 }

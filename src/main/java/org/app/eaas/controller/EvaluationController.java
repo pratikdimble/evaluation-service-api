@@ -30,6 +30,14 @@ public class EvaluationController {
         return ResponseEntity.ok(evaluationService.readResourcesCSVs(isBatch));
     }
 
+    @Operation(summary = "Evaluate fixed path Online or Batch CSVs",
+            description = "Evaluates CSVs from online/batch resources. " +
+                    "Set isBatch=true for Batch mode, false for Online mode.")
+    @GetMapping("/internal")
+    public ResponseEntity<ResultDTO> readMultipleCSVs(@RequestParam(defaultValue = "false") boolean isBatch) throws IOException {
+        return ResponseEntity.ok(evaluationService.readMultipleCSVs(isBatch));
+    }
+
     @Operation(summary = "Export model with details results to CSV", description = "Exports evaluation results into a CSV file")
     @GetMapping("/export-csv")
     public String exportCsv(@RequestParam(defaultValue = "false") boolean isBatch) throws IOException {
@@ -65,7 +73,7 @@ public class EvaluationController {
             @Parameter(description = "Set true for Batch mode, false for Online mode")
             @RequestParam(defaultValue = "false") boolean isBatch) throws IOException {
 
-        evaluationService.exportModelCsv(isBatch);
+        evaluationService.exportCsv(isBatch);
         return ResponseEntity.ok("Model summary CSV export triggered for " +
                 (isBatch ? "Batch" : "Online") + " mode.");
     }
@@ -86,4 +94,5 @@ public class EvaluationController {
 
         return ResponseEntity.ok(evaluationService.exportDetailCsv(model, isBatch));
     }
+
 }

@@ -12,7 +12,7 @@ public interface IEvaluationService {
 
     String readCSV();
 
-    List<ModelDTO> readMultipleCSVs();
+    ResultDTO readMultipleCSVs(Boolean isBatch);
 
     ResultDTO readResourcesCSVs(Boolean isBatch) throws IOException;
 
@@ -20,8 +20,10 @@ public interface IEvaluationService {
 
     List<OutputDTO> fetchModelDetail(String model, Boolean isBatch);
 
-    void exportModelCsv(Boolean isBatch) throws IOException;
+//    void exportModelCsv(Boolean isBatch) throws IOException;
 
     String  exportDetailCsv(String model, Boolean isBatch);
+
+//    ResultDTO readResourcesCSVsMCP(Boolean isBatch) throws IOException;
 
 }
