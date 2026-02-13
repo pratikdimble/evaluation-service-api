@@ -1,0 +1,11 @@
+﻿Scenario,InputA,LayoutA Modified,InputA Records,InputB,LayoutB Modified,InputB Records,Compared Records,Compared Attributes,Attributes with Differences
+Scenario1,model53_IN1.dat,N,3667,model53_IN1_out.dat,N,3667,3667,79,0
+Scenario2,model53_IN2.dat,N,5214,model53_IN2_out.dat,N,5214,5214,73,0
+Scenario3,model53_IN3.dat,N,795,model53_IN3_out.dat,N,795,795,38,0
+Scenario4,model53_IN4.dat,N,8184,model53_IN4_out.dat,N,8184,8184,49,0
+Scenario5,model53_IN5.dat,N,8942,model53_IN5_out.dat,N,8942,8942,60,0
+Scenario6,model53_IN6.dat,N,6277,model53_IN6_out.dat,N,6277,6277,34,0
+Scenario7,model53_IN7.dat,N,9455,model53_IN7_out.dat,N,9455,9455,37,0
+Scenario8,model53_IN8.dat,N,1034,model53_IN8_out.dat,N,1034,1034,64,0
+Scenario9,model53_IN9.dat,N,9494,model53_IN9_out.dat,N,9494,9494,69,0
+Scenario10,model53_IN10.dat,N,8750,model53_IN10_out.dat,N,8750,8750,96,0

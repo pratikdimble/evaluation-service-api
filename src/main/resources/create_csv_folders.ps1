@@ -1,6 +1,6 @@
 # Base folder where folders will be created
-#$baseFolder = "D:\POCs\CC\evaluation-service-api\src\main\resources\Batch"
-$baseFolder = "D:\POCs\CC\evaluation-service-api\src\main\resources\Online"
+$baseFolder = "D:\POCs\CC\evaluation-service-api\src\main\resources\Batch"
+# $baseFolder = "D:\POCs\CC\evaluation-service-api\src\main\resources\Online"
 
 # Make sure base folder exists
 if (-not (Test-Path $baseFolder)) {
@@ -8,8 +8,8 @@ if (-not (Test-Path $baseFolder)) {
 }
 
 # Number of folders to create
-$numberOfFolders = 20
-$startIndex = 16  # Start from model16
+$numberOfFolders = 40
+$startIndex = 26  # Start from model16
 
 # Loop to create folders and CSV files
 for ($i = 0; $i -lt $numberOfFolders; $i++) {
@@ -22,8 +22,8 @@ for ($i = 0; $i -lt $numberOfFolders; $i++) {
         New-Item -Path $folderPath -ItemType Directory
     }
 	
-	#$nestedPath = Join-Path $baseFolder "$folderName\GCP_Online\testplan_dev\report"
-	$nestedPath = Join-Path $baseFolder "$folderName\GCP_vsOnPrem\testplan_dev\report"
+	$nestedPath = Join-Path $baseFolder "$folderName\GCP_Online\testplan_dev\report"
+# 	$nestedPath = Join-Path $baseFolder "$folderName\GCP_vsOnPrem\testplan_dev\report"
 	if (-not (Test-Path $nestedPath)) {
         New-Item -Path $nestedPath -ItemType Directory -Force
     }
