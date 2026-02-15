@@ -32,8 +32,10 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/actuator/**").permitAll() // allow login endpoint
-                        .requestMatchers("/evaluate/**").hasRole("ADMIN")
-                        .requestMatchers("/export/**").hasRole("ADMIN")
+                        .requestMatchers(
+                                "/evaluate/**",
+                                "/export/**")
+                        .hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -49,7 +51,17 @@ public class SecurityConfig {
                 .roles("ADMIN")
                 .build();
 
-        return new InMemoryUserDetailsManager(admin);
+        UserDetails user2 = User.withUsername("swapnil")
+                .password(passwordEncoder().encode("swapnil123")) // encode with BCrypt
+                .roles("USER")
+                .build();
+
+        UserDetails user3 = User.withUsername("pratik")
+                .password(passwordEncoder().encode("pratik123")) // encode with BCrypt
+                .roles("USER")
+                .build();
+
+        return new InMemoryUserDetailsManager(admin, user2, user3);
     }
 
     @Bean
