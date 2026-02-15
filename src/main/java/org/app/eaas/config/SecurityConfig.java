@@ -31,11 +31,11 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/actuator/**").permitAll() // allow login endpoint
+                        .requestMatchers("/auth/**", "/register/**", "/actuator/**").permitAll() // allow login endpoint
                         .requestMatchers(
                                 "/evaluate/**",
                                 "/export/**")
-                        .hasRole("ADMIN")
+                        .hasRole("USER")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
